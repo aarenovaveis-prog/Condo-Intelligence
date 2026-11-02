@@ -199,3 +199,57 @@ test('revoked Proxy catalog produces domain error instead of native exception', 
   revoke();
   assert.throws(() => filterTowerRecords([], { towerId: 'A', knownTowers: proxy }), TowerScopeError);
 });
+
+// v0.9.08: never trust the iterator of a records array when scoping rows.
+test('records iterator cannot inject a foreign row into tower results', () => {
+  const rows = [{ id: 'b', scope: 'tower', tower_id: 'B' }];
+  rows[Symbol.iterator] = function* () { yield { id: 'injected', scope: 'tower', tower_id: 'A' }; };
+  assert.deepEqual(filter('A', false, rows), []);
+});
+
+test('records iterator cannot suppress a declared row', () => {
+  const rows = [{ id: 'a', scope: 'tower', tower_id: 'A' }];
+  rows[Symbol.iterator] = function* () { yield { id: 'b', scope: 'tower', tower_id: 'B' }; };
+  assert.deepEqual(filter('A', false, rows).map(r => r.id), ['a']);
+});
+
+test('sparse records array is rejected rather than silently skipped', () => {
+  const rows = [, { id: 'a', scope: 'tower', tower_id: 'A' }];
+  assert.throws(() => filter('A', false, rows), TowerScopeError);
+});
+
+test('accessor array slot rejected without invoking its getter', () => {
+  const rows = [];
+  let calls = 0;
+  Object.defineProperty(rows, '0', { configurable: true, get() { calls++; return { scope: 'tower', tower_id: 'A' }; } });
+  assert.throws(() => filter('A', false, rows), TowerScopeError);
+  assert.equal(calls, 0);
+});
+
+test('throwing records iterator is ignored when own slots are valid', () => {
+  const rows = [{ id: 'a', scope: 'tower', tower_id: 'A' }];
+  rows[Symbol.iterator] = function* () { throw new Error('untrusted iterator'); };
+  assert.deepEqual(filter('A', false, rows).map(r => r.id), ['a']);
+});
+
+test('revoked Proxy records array produces TowerScopeError', () => {
+  const { proxy, revoke } = Proxy.revocable([], {});
+  revoke();
+  assert.throws(() => filter('A', false, proxy), TowerScopeError);
+});
+
+test('monetary sum uses declared array slots, not a forged iterator', () => {
+  const rows = [{ amount_brl: '1.00' }];
+  rows[Symbol.iterator] = function* () { yield { amount_brl: '999.00' }; };
+  assert.equal(sumBrlCents(rows), 100n);
+});
+
+test('monetary sum ignores throwing array iterator', () => {
+  const rows = [{ amount_brl: '1.00' }];
+  rows[Symbol.iterator] = function* () { throw new Error('untrusted iterator'); };
+  assert.equal(sumBrlCents(rows), 100n);
+});
+
+test('monetary sum rejects sparse arrays', () => {
+  assert.throws(() => sumBrlCents([, { amount_brl: '1.00' }]), TowerScopeError);
+});

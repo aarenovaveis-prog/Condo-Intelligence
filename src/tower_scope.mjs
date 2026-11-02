@@ -59,16 +59,46 @@ function catalogIds(knownTowers) {
   return new Set(ids);
 }
 
+/** Read array length and indexed OWN data slots, not caller-controlled iterators. */
+function recordArrayLength(records) {
+  try {
+    if (!Array.isArray(records)) throw new TowerScopeError('records must be an array');
+    const length = Object.getOwnPropertyDescriptor(records, 'length');
+    if (!length || !Object.hasOwn(length, 'value') ||
+        !Number.isSafeInteger(length.value) || length.value < 0) {
+      throw new TowerScopeError('records must be an array');
+    }
+    return length.value;
+  } catch {
+    // Also normalize reflection errors from revoked Proxy arrays.
+    throw new TowerScopeError('records must be an array');
+  }
+}
+
+function recordAt(records, index) {
+  let slot;
+  try {
+    slot = Object.getOwnPropertyDescriptor(records, String(index));
+  } catch {
+    throw new TowerScopeError('records must contain only own data slots');
+  }
+  if (!slot || !Object.hasOwn(slot, 'value')) {
+    throw new TowerScopeError('records must contain only own data slots');
+  }
+  return slot.value;
+}
+
 /** Return shallow copies of records explicitly scoped to one tower. */
 export function filterTowerRecords(records, { towerId, knownTowers, includeCommon = false } = {}) {
   if (!canonicalId(towerId)) throw new TowerScopeError('towerId must be canonical');
   const catalog = catalogIds(knownTowers);
   if (!catalog.has(towerId)) throw new TowerScopeError('Unknown towerId');
   if (typeof includeCommon !== 'boolean') throw new TowerScopeError('includeCommon must be boolean');
-  if (!Array.isArray(records)) throw new TowerScopeError('records must be an array');
+  const count = recordArrayLength(records);
 
   const selected = [];
-  for (const row of records) {
+  for (let i = 0; i < count; i++) {
+    const row = recordAt(records, i);
     if (!plainRecord(row)) throw new TowerScopeError('record must be a plain data object');
     // Scope metadata must be OWN enumerable data fields. Inherited values can
     // originate from prototype pollution; hidden fields vanish on copy/spread.
@@ -106,13 +136,14 @@ export function parseBrlCents(value) {
 
 /** Exact total; never convert money to floating-point Number. */
 export function sumBrlCents(records, { field = 'amount_brl' } = {}) {
-  if (!Array.isArray(records)) throw new TowerScopeError('records must be an array');
+  const count = recordArrayLength(records);
   if (typeof field !== 'string' || !/^[a-zA-Z][a-zA-Z0-9_]*$/u.test(field) ||
       ['constructor', 'prototype', '__proto__'].includes(field)) {
     throw new TowerScopeError('Invalid money field');
   }
   let total = 0n;
-  for (const row of records) {
+  for (let i = 0; i < count; i++) {
+    const row = recordAt(records, i);
     if (!plainRecord(row) || !Object.hasOwn(row, field)) {
       throw new TowerScopeError('Missing or invalid monetary record');
     }
