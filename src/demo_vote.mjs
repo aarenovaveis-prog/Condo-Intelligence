@@ -2,6 +2,7 @@
  * Offline, in-memory vote demonstration using synthetic tokens only.
  * NOT identity verification, legal assembly voting, access control or persistence.
  * Any holder of the returned session can close it; never connect to real voters.
+ * Choice totals are intentionally hidden until explicit close (not a security boundary).
  */
 const TOKEN = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/u;
 const CHOICES = Object.freeze(['yes', 'no', 'abstain']);
@@ -45,17 +46,21 @@ export function createDemoVoteSession({ motionId, eligibleTokens } = {}) {
   let closed = false;
 
   function snapshot() {
-    const counts = { yes: 0, no: 0, abstain: 0 };
-    for (const choice of ballots.values()) counts[choice]++;
+    // Prevent casual disclosure of live results through either snapshot() or
+    // castVote() responses. This does NOT authorize who may close the session.
+    const counts = closed ? { yes: 0, no: 0, abstain: 0 } : null;
+    if (closed) {
+      for (const choice of ballots.values()) counts[choice]++;
+    }
     return Object.freeze({
       motionId,
       status: closed ? 'closed' : 'open',
       eligible: allowed.size,
       ballots: ballots.size,
       remaining: allowed.size - ballots.size,
-      yes: counts.yes,
-      no: counts.no,
-      abstain: counts.abstain,
+      yes: counts?.yes ?? null,
+      no: counts?.no ?? null,
+      abstain: counts?.abstain ?? null,
     });
   }
 
