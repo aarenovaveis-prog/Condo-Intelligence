@@ -4,6 +4,8 @@
  * Uses only synthetic records; does not connect to the Condo application.
  */
 const MAX_CENTS = 99_999_999_999_999n; // R$ 999,999,999,999.99
+// Longest accepted representation: -999999999999.99 (16 UTF-16 code units).
+const MAX_MONEY_TEXT_LENGTH = 16;
 const MONEY = /^-?(?:0|[1-9][0-9]*)(?:\.[0-9]{1,2})?$/u;
 
 export class TowerScopeError extends Error {
@@ -58,7 +60,14 @@ export function filterTowerRecords(records, { towerId, knownTowers, includeCommo
 
 /** Parse canonical BRL decimal text to exact integer cents (bigint). */
 export function parseBrlCents(value) {
-  if (typeof value !== 'string' || !MONEY.test(value)) {
+  if (typeof value !== 'string') {
+    throw new TowerScopeError('Money must be a canonical decimal string');
+  }
+  // Bound parsing cost before the regex or BigInt sees untrusted input.
+  if (value.length > MAX_MONEY_TEXT_LENGTH) {
+    throw new TowerScopeError('Money exceeds supported range');
+  }
+  if (!MONEY.test(value)) {
     throw new TowerScopeError('Money must be a canonical decimal string');
   }
   const negative = value.startsWith('-');

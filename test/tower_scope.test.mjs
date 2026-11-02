@@ -83,3 +83,28 @@ test('reject accessor amount without invoking getter', () => {
 });
 test('reject invalid field names', () => assert.throws(() => sumBrlCents([], { field: '__proto__' }), TowerScopeError));
 test('reject number formatting to avoid float conversion', () => assert.throws(() => formatBrlCents(1), TowerScopeError));
+
+// Prevent unbounded numeric text from reaching BigInt, which could consume
+// disproportionate CPU and memory for untrusted demonstration imports.
+test('reject oversized numeric text before BigInt conversion', () => {
+  const originalBigInt = globalThis.BigInt;
+  let calls = 0;
+  try {
+    globalThis.BigInt = (...args) => { calls++; return originalBigInt(...args); };
+    for (const value of ['9'.repeat(100_000), '-' + '9'.repeat(100_000), '9'.repeat(100_000) + '.99']) {
+      assert.throws(() => parseBrlCents(value), TowerScopeError);
+    }
+  } finally {
+    globalThis.BigInt = originalBigInt;
+  }
+  assert.equal(calls, 0, 'oversized text must be rejected before BigInt');
+});
+
+test('negative maximum amount remains accepted', () => {
+  assert.equal(parseBrlCents('-999999999999.99'), -99_999_999_999_999n);
+});
+
+test('over-limit canonical length rejected with supported range error', () => {
+  assert.throws(() => parseBrlCents('99999999999999999'),
+    { name: 'TowerScopeError', message: 'Money exceeds supported range' });
+});
