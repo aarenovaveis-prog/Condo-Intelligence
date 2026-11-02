@@ -109,7 +109,6 @@ test('over-limit canonical length rejected with supported range error', () => {
     { name: 'TowerScopeError', message: 'Money exceeds supported range' });
 });
 
-
 // Regression: legacy objects must never be classified by polluted prototypes.
 // Restore the prototype even if an assertion fails; no real tenant data is used.
 function withPrototypeFields(fields, action) {
