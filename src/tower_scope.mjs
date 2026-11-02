@@ -19,11 +19,38 @@ function canonicalId(value) {
   return typeof value === 'string' && value.length > 0 && value === value.trim();
 }
 
-function plainRecord(row) {
-  if (row === null || typeof row !== 'object' || Array.isArray(row)) return false;
-  const proto = Object.getPrototypeOf(row);
-  if (proto !== Object.prototype && proto !== null) return false;
-  return Object.values(Object.getOwnPropertyDescriptors(row)).every(d => Object.hasOwn(d, 'value'));
+/** Snapshot own data descriptors; do not invoke row getters or Proxy get traps. */
+function recordDataDescriptors(row) {
+  try {
+    if (row === null || typeof row !== 'object' || Array.isArray(row)) {
+      throw new TowerScopeError('record must be a plain data object');
+    }
+    const proto = Object.getPrototypeOf(row);
+    if (proto !== Object.prototype && proto !== null) {
+      throw new TowerScopeError('record must be a plain data object');
+    }
+    const descriptors = Object.getOwnPropertyDescriptors(row);
+    if (!Reflect.ownKeys(descriptors).every(key => Object.hasOwn(descriptors[key], 'value'))) {
+      throw new TowerScopeError('record must be a plain data object');
+    }
+    return descriptors;
+  } catch {
+    // Normalize revoked Proxy and hostile reflection traps to domain errors.
+    throw new TowerScopeError('record must be a plain data object');
+  }
+}
+
+function copyEnumerableData(descriptors) {
+  const copy = {};
+  for (const key of Reflect.ownKeys(descriptors)) {
+    const descriptor = descriptors[key];
+    if (descriptor.enumerable) {
+      Object.defineProperty(copy, key, {
+        value: descriptor.value, enumerable: true, writable: true, configurable: true,
+      });
+    }
+  }
+  return copy;
 }
 
 function catalogIds(knownTowers) {
@@ -99,16 +126,16 @@ export function filterTowerRecords(records, { towerId, knownTowers, includeCommo
   const selected = [];
   for (let i = 0; i < count; i++) {
     const row = recordAt(records, i);
-    if (!plainRecord(row)) throw new TowerScopeError('record must be a plain data object');
+    const descriptors = recordDataDescriptors(row);
     // Scope metadata must be OWN enumerable data fields. Inherited values can
-    // originate from prototype pollution; hidden fields vanish on copy/spread.
-    const scope = Object.getOwnPropertyDescriptor(row, 'scope');
-    const tower = Object.getOwnPropertyDescriptor(row, 'tower_id');
+    // originate from prototype pollution; hidden fields vanish on copy.
+    const scope = Object.hasOwn(descriptors, 'scope') ? descriptors.scope : undefined;
+    const tower = Object.hasOwn(descriptors, 'tower_id') ? descriptors.tower_id : undefined;
     if (!scope?.enumerable || !tower?.enumerable) continue;
     if (scope.value === 'tower' && tower.value === towerId) {
-      selected.push({ ...row });
+      selected.push(copyEnumerableData(descriptors));
     } else if (includeCommon && scope.value === 'common' && (tower.value === null || tower.value === '')) {
-      selected.push({ ...row });
+      selected.push(copyEnumerableData(descriptors));
     }
     // Unknown, legacy, mismatched common and other-tower records stay excluded.
   }
@@ -144,10 +171,11 @@ export function sumBrlCents(records, { field = 'amount_brl' } = {}) {
   let total = 0n;
   for (let i = 0; i < count; i++) {
     const row = recordAt(records, i);
-    if (!plainRecord(row) || !Object.hasOwn(row, field)) {
+    const descriptors = recordDataDescriptors(row);
+    if (!Object.hasOwn(descriptors, field)) {
       throw new TowerScopeError('Missing or invalid monetary record');
     }
-    total += parseBrlCents(row[field]);
+    total += parseBrlCents(descriptors[field].value);
     if (total > MAX_CENTS || total < -MAX_CENTS) {
       throw new TowerScopeError('Money total exceeds supported range');
     }

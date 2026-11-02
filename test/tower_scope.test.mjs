@@ -253,3 +253,44 @@ test('monetary sum ignores throwing array iterator', () => {
 test('monetary sum rejects sparse arrays', () => {
   assert.throws(() => sumBrlCents([, { amount_brl: '1.00' }]), TowerScopeError);
 });
+
+// v0.9.09: never invoke row get traps after validating own data descriptors.
+test('money sum uses own data descriptor instead of Proxy get trap', () => {
+  const row = new Proxy({ amount_brl: '1.00' }, {
+    get(target, key) { return key === 'amount_brl' ? '999.00' : Reflect.get(target, key); },
+  });
+  assert.equal(sumBrlCents([row]), 100n);
+});
+
+test('money sum does not invoke a throwing Proxy get trap', () => {
+  let reads = 0;
+  const row = new Proxy({ amount_brl: '1.00' }, {
+    get() { reads++; throw new Error('untrusted get'); },
+  });
+  assert.equal(sumBrlCents([row]), 100n);
+  assert.equal(reads, 0);
+});
+
+test('filter copies own data descriptors without invoking Proxy get trap', () => {
+  let reads = 0;
+  const row = new Proxy({ id: 'original', scope: 'tower', tower_id: 'A', amount_brl: '1.00' }, {
+    get(target, key) { reads++; return key === 'id' ? 'forged' : Reflect.get(target, key); },
+  });
+  assert.deepEqual(filter('A', false, [row]).map(r => r.id), ['original']);
+  assert.equal(reads, 0);
+});
+
+test('revoked Proxy record raises domain error in both paths', () => {
+  const { proxy, revoke } = Proxy.revocable({ scope: 'tower', tower_id: 'A', amount_brl: '1.00' }, {});
+  revoke();
+  assert.throws(() => filter('A', false, [proxy]), TowerScopeError);
+  assert.throws(() => sumBrlCents([proxy]), TowerScopeError);
+});
+
+test('throwing reflection trap raises domain error in both paths', () => {
+  const row = new Proxy({ scope: 'tower', tower_id: 'A', amount_brl: '1.00' }, {
+    ownKeys() { throw new Error('untrusted reflection'); },
+  });
+  assert.throws(() => filter('A', false, [row]), TowerScopeError);
+  assert.throws(() => sumBrlCents([row]), TowerScopeError);
+});
