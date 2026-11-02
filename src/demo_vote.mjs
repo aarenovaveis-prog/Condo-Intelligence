@@ -1,7 +1,8 @@
 /**
  * Offline, in-memory vote demonstration using synthetic tokens only.
  * NOT identity verification, legal assembly voting, access control or persistence.
- * Any holder of the returned session can close it; never connect to real voters.
+ * Closing requires an explicit UI confirmation, NOT authorization. Any holder
+ * of the session can still close it; never connect to real voters.
  * Choice totals are intentionally hidden until explicit close (not a security boundary).
  */
 const TOKEN = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/u;
@@ -75,8 +76,18 @@ export function createDemoVoteSession({ motionId, eligibleTokens } = {}) {
       ballots.set(token, choice);
       return snapshot();
     },
-    close() {
-      closed = true;
+    close(confirmation) {
+      // This is a deliberate-action guard for a local demo, NOT an identity or
+      // authorization check. Inspect own data only: inherited values or
+      // accessors must not confirm a potentially destructive transition.
+      if (!closed) {
+        const descriptor = confirmation !== null && typeof confirmation === 'object'
+          ? Object.getOwnPropertyDescriptor(confirmation, 'confirm') : null;
+        if (!descriptor || !Object.hasOwn(descriptor, 'value') || descriptor.value !== true) {
+          throw new DemoVoteError('Explicit demonstration close confirmation required');
+        }
+        closed = true;
+      }
       return snapshot();
     },
     snapshot,
