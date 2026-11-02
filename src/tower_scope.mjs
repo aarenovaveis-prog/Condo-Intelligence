@@ -48,9 +48,14 @@ export function filterTowerRecords(records, { towerId, knownTowers, includeCommo
   const selected = [];
   for (const row of records) {
     if (!plainRecord(row)) throw new TowerScopeError('record must be a plain data object');
-    if (row.scope === 'tower' && row.tower_id === towerId) {
+    // Scope metadata must be OWN enumerable data fields. Inherited values can
+    // originate from prototype pollution; hidden fields vanish on copy/spread.
+    const scope = Object.getOwnPropertyDescriptor(row, 'scope');
+    const tower = Object.getOwnPropertyDescriptor(row, 'tower_id');
+    if (!scope?.enumerable || !tower?.enumerable) continue;
+    if (scope.value === 'tower' && tower.value === towerId) {
       selected.push({ ...row });
-    } else if (includeCommon && row.scope === 'common' && (row.tower_id === null || row.tower_id === '')) {
+    } else if (includeCommon && scope.value === 'common' && (tower.value === null || tower.value === '')) {
       selected.push({ ...row });
     }
     // Unknown, legacy, mismatched common and other-tower records stay excluded.
