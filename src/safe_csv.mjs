@@ -8,7 +8,8 @@ const CONTROL_PREFIX = /^[\u0001-\u001F\u007F-\u009F]/u;
 const MAX_ROWS = 10_000;
 const MAX_COLUMNS = 64;
 const MAX_CELL_LENGTH = 8_192;
-const MAX_CSV_LENGTH = 8_000_000;
+const MAX_CSV_BYTES = 8_000_000;
+const utf8 = new TextEncoder();
 
 export class CsvExportError extends Error {
   constructor(message) {
@@ -66,7 +67,9 @@ export function serializeSafeCsv({ columns, rows, bom = false }) {
   }
 
   const lines = [columns.map(c => escapeCsvCell(c.label)).join(',')];
-  let totalLength = lines[0].length;
+  // Include header CRLF and the optional UTF-8 BOM in the output byte budget.
+  let totalBytes = (bom ? 3 : 0) + utf8.encode(lines[0]).byteLength + 2;
+  if (totalBytes > MAX_CSV_BYTES) throw new CsvExportError('CSV exceeds size limit');
   for (const row of rows) {
     if (row === null || typeof row !== 'object' || Array.isArray(row)) {
       throw new CsvExportError('Invalid CSV row');
@@ -75,8 +78,8 @@ export function serializeSafeCsv({ columns, rows, bom = false }) {
       if (!keys.has(key)) throw new CsvExportError('Unexpected CSV field');
     }
     const line = columns.map(c => escapeCsvCell(Object.hasOwn(row, c.key) ? row[c.key] : '')).join(',');
-    totalLength += line.length + 2;
-    if (totalLength > MAX_CSV_LENGTH) throw new CsvExportError('CSV exceeds size limit');
+    totalBytes += utf8.encode(line).byteLength + 2;
+    if (totalBytes > MAX_CSV_BYTES) throw new CsvExportError('CSV exceeds size limit');
     lines.push(line);
   }
   const output = lines.join('\r\n') + '\r\n';
