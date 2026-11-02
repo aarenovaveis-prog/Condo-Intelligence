@@ -22,13 +22,25 @@ function validToken(value) {
 export function createDemoVoteSession({ motionId, eligibleTokens } = {}) {
   if (!validToken(motionId)) throw new DemoVoteError('Invalid motion ID');
   if (!Array.isArray(eligibleTokens) || eligibleTokens.length === 0 ||
-      eligibleTokens.length > MAX_VOTERS ||
-      eligibleTokens.some(token => !validToken(token)) ||
-      new Set(eligibleTokens).size !== eligibleTokens.length) {
+      eligibleTokens.length > MAX_VOTERS) {
     throw new DemoVoteError('Invalid synthetic voter token catalog');
   }
 
-  const allowed = new Set(eligibleTokens);
+  // Read only own indexed data slots. Array#some skips holes and Set uses a
+  // caller-controlled iterator, either of which could admit phantom voters.
+  const validatedTokens = [];
+  for (let i = 0; i < eligibleTokens.length; i++) {
+    const descriptor = Object.getOwnPropertyDescriptor(eligibleTokens, i);
+    if (!descriptor || !Object.hasOwn(descriptor, 'value') ||
+        !validToken(descriptor.value)) {
+      throw new DemoVoteError('Invalid synthetic voter token catalog');
+    }
+    validatedTokens.push(descriptor.value);
+  }
+  const allowed = new Set(validatedTokens);
+  if (allowed.size !== validatedTokens.length) {
+    throw new DemoVoteError('Invalid synthetic voter token catalog');
+  }
   const ballots = new Map();
   let closed = false;
 
