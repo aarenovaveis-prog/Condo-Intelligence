@@ -81,8 +81,16 @@ export function createDemoVoteSession({ motionId, eligibleTokens } = {}) {
       // authorization check. Inspect own data only: inherited values or
       // accessors must not confirm a potentially destructive transition.
       if (!closed) {
-        const descriptor = confirmation !== null && typeof confirmation === 'object'
-          ? Object.getOwnPropertyDescriptor(confirmation, 'confirm') : null;
+        let descriptor = null;
+        if (confirmation !== null && typeof confirmation === 'object') {
+          try {
+            // A revoked or hostile Proxy can throw during reflection. Treat
+            // that as invalid confirmation, not an uncaught native exception.
+            descriptor = Object.getOwnPropertyDescriptor(confirmation, 'confirm');
+          } catch {
+            descriptor = null;
+          }
+        }
         if (!descriptor || !Object.hasOwn(descriptor, 'value') || descriptor.value !== true) {
           throw new DemoVoteError('Explicit demonstration close confirmation required');
         }
