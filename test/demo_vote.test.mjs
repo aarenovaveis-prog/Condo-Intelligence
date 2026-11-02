@@ -91,3 +91,35 @@ test('no source data or external services required', () => {
   const session = create();
   assert.deepEqual(Object.keys(session).sort(), ['castVote', 'close', 'snapshot']);
 });
+
+// Regression: sparse array holes and custom iterators must not create phantom voters.
+test('rejects sparse eligible-token catalogs', () => {
+  const sparseSingle = new Array(1);
+  const sparseMixed = ['demo-A', , 'demo-C'];
+  const sparseMax = new Array(1000);
+  for (const eligibleTokens of [sparseSingle, sparseMixed, sparseMax]) {
+    assert.throws(
+      () => createDemoVoteSession({ motionId: 'M1', eligibleTokens }),
+      DemoVoteError,
+    );
+  }
+});
+
+test('ignores a custom iterator and uses only validated indexed token values', () => {
+  const eligibleTokens = ['demo-A'];
+  eligibleTokens[Symbol.iterator] = function* () { yield 'intruder'; };
+  const session = createDemoVoteSession({ motionId: 'M1', eligibleTokens });
+  assert.throws(() => session.castVote('intruder', 'yes'), DemoVoteError);
+  assert.equal(session.castVote('demo-A', 'yes').yes, 1);
+});
+
+test('rejects accessor-based token slots without invoking their getters', () => {
+  const eligibleTokens = ['demo-A'];
+  let reads = 0;
+  Object.defineProperty(eligibleTokens, '0', { configurable: true, get() { reads++; return 'demo-A'; } });
+  assert.throws(
+    () => createDemoVoteSession({ motionId: 'M1', eligibleTokens }),
+    DemoVoteError,
+  );
+  assert.equal(reads, 0);
+});
