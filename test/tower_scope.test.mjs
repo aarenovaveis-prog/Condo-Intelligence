@@ -200,7 +200,6 @@ test('revoked Proxy catalog produces domain error instead of native exception', 
   assert.throws(() => filterTowerRecords([], { towerId: 'A', knownTowers: proxy }), TowerScopeError);
 });
 
-
 // v0.9.08: never trust the iterator of a records array when scoping rows.
 test('records iterator cannot inject a foreign row into tower results', () => {
   const rows = [{ id: 'b', scope: 'tower', tower_id: 'B' }];
