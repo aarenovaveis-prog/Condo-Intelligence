@@ -27,12 +27,34 @@ function plainRecord(row) {
 }
 
 function catalogIds(knownTowers) {
-  if (!Array.isArray(knownTowers) && !(knownTowers instanceof Set)) {
-    throw new TowerScopeError('knownTowers must be an array or Set');
+  const invalid = () => new TowerScopeError('knownTowers must contain unique canonical IDs');
+  let ids;
+  try {
+    if (Array.isArray(knownTowers)) {
+      // Never trust a caller-controlled iterator or accessor on an array catalog.
+      // Inspect every indexed OWN data slot, including positions skipped by
+      // Array#some, before constructing the canonical tower set.
+      ids = [];
+      for (let i = 0; i < knownTowers.length; i++) {
+        const slot = Object.getOwnPropertyDescriptor(knownTowers, String(i));
+        if (!slot || !Object.hasOwn(slot, 'value') || !canonicalId(slot.value)) {
+          throw invalid();
+        }
+        ids.push(slot.value);
+      }
+    } else if (knownTowers instanceof Set) {
+      // Bypass an overridden instance/subclass Symbol.iterator.
+      ids = Array.from(Set.prototype.values.call(knownTowers));
+    } else {
+      throw invalid();
+    }
+  } catch (error) {
+    // Revoked/hostile proxies must not leak native reflection exceptions.
+    if (error instanceof TowerScopeError) throw error;
+    throw invalid();
   }
-  const ids = [...knownTowers];
   if (!ids.length || ids.some(id => !canonicalId(id)) || new Set(ids).size !== ids.length) {
-    throw new TowerScopeError('knownTowers must contain unique canonical IDs');
+    throw invalid();
   }
   return new Set(ids);
 }

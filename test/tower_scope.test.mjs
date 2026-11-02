@@ -150,3 +150,52 @@ test('exclude metadata hidden from returned copy', () => {
   Object.defineProperty(row, 'tower_id', { value: 'A', enumerable: false });
   assert.deepEqual(filter('A', false, [row]), []);
 });
+
+
+// Regression: catalog membership must come from indexed own data slots,
+// never a caller-supplied iterator or getter.
+test('array iterator cannot replace the declared tower catalog', () => {
+  const catalog = ['A'];
+  catalog[Symbol.iterator] = function* () { yield 'B'; };
+  assert.throws(() => filterTowerRecords([], { towerId: 'B', knownTowers: catalog }), TowerScopeError);
+  assert.deepEqual(filterTowerRecords(records, { towerId: 'A', knownTowers: catalog }).map(r => r.id), ['a1', 'a2']);
+});
+
+test('array iterator cannot append an unauthorized tower', () => {
+  const catalog = ['A'];
+  catalog[Symbol.iterator] = function* () { yield 'A'; yield 'B'; };
+  assert.throws(() => filterTowerRecords([], { towerId: 'B', knownTowers: catalog }), TowerScopeError);
+});
+
+test('sparse catalog cannot be filled by a forged iterator', () => {
+  const catalog = ['A', , 'C'];
+  catalog[Symbol.iterator] = function* () { yield 'A'; yield 'B'; yield 'C'; };
+  assert.throws(() => filterTowerRecords([], { towerId: 'B', knownTowers: catalog }), TowerScopeError);
+});
+
+test('catalog accessor slots are rejected without executing getters', () => {
+  const catalog = ['A'];
+  let reads = 0;
+  Object.defineProperty(catalog, '0', { configurable: true, get() { reads++; return 'A'; } });
+  assert.throws(() => filterTowerRecords([], { towerId: 'A', knownTowers: catalog }), TowerScopeError);
+  assert.equal(reads, 0);
+});
+
+test('Set instance iterator cannot forge tower membership', () => {
+  const catalog = new Set(['A']);
+  catalog[Symbol.iterator] = function* () { yield 'B'; };
+  assert.throws(() => filterTowerRecords([], { towerId: 'B', knownTowers: catalog }), TowerScopeError);
+  assert.deepEqual(filterTowerRecords(records, { towerId: 'A', knownTowers: catalog }).map(r => r.id), ['a1', 'a2']);
+});
+
+test('throwing array iterator is ignored when own slots are valid', () => {
+  const catalog = ['A'];
+  catalog[Symbol.iterator] = function* () { throw new Error('iterator trap'); };
+  assert.deepEqual(filterTowerRecords(records, { towerId: 'A', knownTowers: catalog }).map(r => r.id), ['a1', 'a2']);
+});
+
+test('revoked Proxy catalog produces domain error instead of native exception', () => {
+  const { proxy, revoke } = Proxy.revocable(['A'], {});
+  revoke();
+  assert.throws(() => filterTowerRecords([], { towerId: 'A', knownTowers: proxy }), TowerScopeError);
+});
