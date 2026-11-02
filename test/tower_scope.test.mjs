@@ -254,7 +254,6 @@ test('monetary sum rejects sparse arrays', () => {
   assert.throws(() => sumBrlCents([, { amount_brl: '1.00' }]), TowerScopeError);
 });
 
-
 // v0.9.09: never invoke row get traps after validating own data descriptors.
 test('money sum uses own data descriptor instead of Proxy get trap', () => {
   const row = new Proxy({ amount_brl: '1.00' }, {
