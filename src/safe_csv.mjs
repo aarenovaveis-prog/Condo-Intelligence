@@ -37,6 +37,14 @@ export function escapeCsvCell(value) {
   const text = scalarToText(value);
   if (text.length > MAX_CELL_LENGTH) throw new CsvExportError('CSV cell too long');
   if (text.includes('\0')) throw new CsvExportError('NUL byte in CSV cell');
+  // TextEncoder silently replaces unpaired UTF-16 surrogates with U+FFFD.
+  // Reject malformed input rather than silently corrupting exported records.
+  for (const character of text) {
+    const codePoint = character.codePointAt(0);
+    if (codePoint >= 0xD800 && codePoint <= 0xDFFF) {
+      throw new CsvExportError('Malformed Unicode in CSV cell');
+    }
+  }
   const safe = FORMULA_PREFIX.test(text) || CONTROL_PREFIX.test(text) ? "'" + text : text;
   return '"' + safe.replaceAll('"', '""') + '"';
 }
