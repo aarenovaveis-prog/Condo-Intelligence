@@ -108,3 +108,46 @@ test('over-limit canonical length rejected with supported range error', () => {
   assert.throws(() => parseBrlCents('99999999999999999'),
     { name: 'TowerScopeError', message: 'Money exceeds supported range' });
 });
+
+
+// Regression: legacy objects must never be classified by polluted prototypes.
+// Restore the prototype even if an assertion fails; no real tenant data is used.
+function withPrototypeFields(fields, action) {
+  const saved = Object.fromEntries(Object.keys(fields).map(key => [key, Object.getOwnPropertyDescriptor(Object.prototype, key)]));
+  try {
+    for (const [key, value] of Object.entries(fields)) {
+      Object.defineProperty(Object.prototype, key, { configurable: true, value, writable: true });
+    }
+    action();
+  } finally {
+    for (const [key, descriptor] of Object.entries(saved)) {
+      if (descriptor) Object.defineProperty(Object.prototype, key, descriptor);
+      else delete Object.prototype[key];
+    }
+  }
+}
+
+test('exclude legacy record when scope and tower ID are inherited', () => {
+  withPrototypeFields({ scope: 'tower', tower_id: 'A' }, () => {
+    assert.deepEqual(filter('A', false, [{ id: 'legacy', amount_brl: '999.99' }]), []);
+  });
+});
+
+test('exclude record with own tower scope but inherited tower ID', () => {
+  withPrototypeFields({ tower_id: 'A' }, () => {
+    assert.deepEqual(filter('A', false, [{ id: 'legacy', scope: 'tower', amount_brl: '999.99' }]), []);
+  });
+});
+
+test('exclude common record with inherited common classification', () => {
+  withPrototypeFields({ scope: 'common', tower_id: null }, () => {
+    assert.deepEqual(filter('A', true, [{ id: 'legacy', amount_brl: '999.99' }]), []);
+  });
+});
+
+test('exclude metadata hidden from returned copy', () => {
+  const row = { id: 'hidden', amount_brl: '99.99' };
+  Object.defineProperty(row, 'scope', { value: 'tower', enumerable: false });
+  Object.defineProperty(row, 'tower_id', { value: 'A', enumerable: false });
+  assert.deepEqual(filter('A', false, [row]), []);
+});
