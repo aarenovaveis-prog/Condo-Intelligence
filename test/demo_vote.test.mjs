@@ -7,7 +7,7 @@ const create = () => createDemoVoteSession({ motionId: 'motion-01', eligibleToke
 test('initial state is open and empty', () => {
   assert.deepEqual(create().snapshot(), {
     motionId: 'motion-01', status: 'open', eligible: 3, ballots: 0,
-    remaining: 3, yes: 0, no: 0, abstain: 0,
+    remaining: 3, yes: null, no: null, abstain: null,
   });
 });
 test('counts yes, no and abstain exactly once', () => {
@@ -15,13 +15,16 @@ test('counts yes, no and abstain exactly once', () => {
   session.castVote('demo-A', 'yes');
   session.castVote('demo-B', 'no');
   const result = session.castVote('demo-C', 'abstain');
-  assert.deepEqual([result.yes, result.no, result.abstain, result.remaining], [1, 1, 1, 0]);
+  assert.deepEqual([result.yes, result.no, result.abstain, result.remaining], [null, null, null, 0]);
+  assert.deepEqual([session.close().yes, session.snapshot().no, session.snapshot().abstain], [1, 1, 1]);
 });
 test('rejects duplicate votes without changing tally', () => {
   const session = create();
   session.castVote('demo-A', 'yes');
   assert.throws(() => session.castVote('demo-A', 'no'), DemoVoteError);
-  assert.equal(session.snapshot().yes, 1);
+  assert.equal(session.snapshot().yes, null);
+  assert.equal(session.snapshot().no, null);
+  assert.equal(session.close().yes, 1);
   assert.equal(session.snapshot().no, 0);
 });
 test('rejects unknown or malformed tokens', () => {
@@ -63,7 +66,7 @@ test('snapshot mutation does not affect tally', () => {
   const session = create();
   const result = session.snapshot();
   assert.throws(() => { result.yes = 900; }, TypeError);
-  assert.equal(session.snapshot().yes, 0);
+  assert.equal(session.snapshot().yes, null);
 });
 test('catalog mutation after creation does not alter eligibility', () => {
   const eligibleTokens = ['demo-A'];
@@ -110,7 +113,8 @@ test('ignores a custom iterator and uses only validated indexed token values', (
   eligibleTokens[Symbol.iterator] = function* () { yield 'intruder'; };
   const session = createDemoVoteSession({ motionId: 'M1', eligibleTokens });
   assert.throws(() => session.castVote('intruder', 'yes'), DemoVoteError);
-  assert.equal(session.castVote('demo-A', 'yes').yes, 1);
+  assert.equal(session.castVote('demo-A', 'yes').yes, null);
+  assert.equal(session.close().yes, 1);
 });
 
 test('rejects accessor-based token slots without invoking their getters', () => {
@@ -122,4 +126,43 @@ test('rejects accessor-based token slots without invoking their getters', () => 
     DemoVoteError,
   );
   assert.equal(reads, 0);
+});
+
+// Regression: early tally disclosure can influence remaining demo participants.
+test('open snapshot does not disclose option tallies', () => {
+  const session = create();
+  session.castVote('demo-A', 'yes');
+  assert.deepEqual(
+    [session.snapshot().yes, session.snapshot().no, session.snapshot().abstain],
+    [null, null, null],
+  );
+  assert.equal(session.snapshot().ballots, 1);
+});
+
+test('castVote response cannot disclose live option tallies', () => {
+  const session = create();
+  const response = session.castVote('demo-A', 'no');
+  assert.deepEqual([response.yes, response.no, response.abstain], [null, null, null]);
+  assert.equal(response.remaining, 2);
+});
+
+test('all ballots submitted still hide results until explicit close', () => {
+  const session = create();
+  session.castVote('demo-A', 'yes');
+  session.castVote('demo-B', 'yes');
+  session.castVote('demo-C', 'no');
+  assert.deepEqual([session.snapshot().yes, session.snapshot().no, session.snapshot().abstain], [null, null, null]);
+  assert.equal(session.snapshot().remaining, 0);
+});
+
+test('closing reveals exact totals and keeps them immutable', () => {
+  const session = create();
+  session.castVote('demo-A', 'yes');
+  session.castVote('demo-B', 'no');
+  session.castVote('demo-C', 'abstain');
+  const result = session.close();
+  assert.deepEqual([result.yes, result.no, result.abstain], [1, 1, 1]);
+  assert.equal(result.status, 'closed');
+  assert.equal(Object.isFrozen(result), true);
+  assert.deepEqual(session.snapshot(), result);
 });
