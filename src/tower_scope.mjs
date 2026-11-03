@@ -6,6 +6,7 @@
 const MAX_CENTS = 99_999_999_999_999n; // R$ 999,999,999,999.99
 // Longest accepted representation: -999999999999.99 (16 UTF-16 code units).
 const MAX_MONEY_TEXT_LENGTH = 16;
+const MAX_DEMO_RECORDS = 10_000; // bounded offline workload
 const MONEY = /^-?(?:0|[1-9][0-9]*)(?:\.[0-9]{1,2})?$/u;
 
 export class TowerScopeError extends Error {
@@ -94,6 +95,9 @@ function recordArrayLength(records) {
     if (!length || !Object.hasOwn(length, 'value') ||
         !Number.isSafeInteger(length.value) || length.value < 0) {
       throw new TowerScopeError('records must be an array');
+    }
+    if (length.value > MAX_DEMO_RECORDS) {
+      throw new TowerScopeError('Too many demonstration records');
     }
     return length.value;
   } catch {
