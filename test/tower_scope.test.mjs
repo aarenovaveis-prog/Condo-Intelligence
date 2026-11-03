@@ -524,3 +524,37 @@ test('money sum rejects 10,001 records without evaluating row values', () => {
   assert.throws(() => sumBrlCents(rows), TowerScopeError);
   assert.equal(invoked, false);
 });
+
+
+// v0.9.33: record array length must be read from its own descriptor,
+// not through caller-controlled Proxy get traps.
+for (const [label, action] of [
+  ['filter', rows => filterTowerRecords(rows, { towerId: 'A', knownTowers: ['A'] })],
+  ['money sum', rows => sumBrlCents(rows)],
+]) {
+  test(label + ' does not invoke a Proxy get trap for array length', () => {
+    let lengthReads = 0;
+    const rows = new Proxy([{ scope: 'tower', tower_id: 'A', amount_brl: '0.01' }], {
+      get(target, key, receiver) {
+        if (key === 'length') {
+          lengthReads++;
+          throw new Error('unexpected length read');
+        }
+        return Reflect.get(target, key, receiver);
+      },
+    });
+    const result = action(rows);
+    assert.equal(label === 'filter' ? result.length : result, label === 'filter' ? 1 : 1n);
+    assert.equal(lengthReads, 0);
+  });
+
+  test(label + ' rejects a hostile array length descriptor with a domain error', () => {
+    const rows = new Proxy([{ scope: 'tower', tower_id: 'A', amount_brl: '0.01' }], {
+      getOwnPropertyDescriptor(target, key) {
+        if (key === 'length') throw new Error('hostile descriptor');
+        return Reflect.getOwnPropertyDescriptor(target, key);
+      },
+    });
+    assert.throws(() => action(rows), TowerScopeError);
+  });
+}
