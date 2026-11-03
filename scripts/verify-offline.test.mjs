@@ -84,3 +84,17 @@ test('fails closed when regression file contains zero tests', () => {
     assert.doesNotMatch(result.stdout, /PASS: all offline checks/);
   });
 });
+
+
+test('fails closed when all regression tests are skipped', () => {
+  withFixture(root => {
+    writeFileSync(join(root, 'test', 'tower_scope.test.mjs'),
+      'import test from "node:test"; test("skipped synthetic", { skip: true }, () => {});\\n');
+    const result = run(root);
+    assert.equal(result.error, undefined);
+    assert.equal(result.status, 1, result.stdout + result.stderr);
+    assert.match(result.stdout, /# tests 1/);
+    assert.match(result.stdout, /# pass 0/);
+    assert.match(result.stderr, /FAILED: regression/);
+  });
+});
