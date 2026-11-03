@@ -127,7 +127,9 @@ function recordAt(records, index) {
 }
 
 /** Return shallow copies of records explicitly scoped to one tower. */
-export function filterTowerRecords(records, { towerId, knownTowers, includeCommon = false } = {}) {
+export function filterTowerRecords(records, options = {}) {
+  if (options === null || typeof options !== 'object') throw new TowerScopeError('Invalid filter options');
+  const { towerId, knownTowers, includeCommon = false } = options;
   if (!canonicalId(towerId)) throw new TowerScopeError('towerId must be canonical');
   const catalog = catalogIds(knownTowers);
   if (!catalog.has(towerId)) throw new TowerScopeError('Unknown towerId');
@@ -177,7 +179,9 @@ export function parseBrlCents(value) {
 }
 
 /** Exact total; never convert money to floating-point Number. */
-export function sumBrlCents(records, { field = 'amount_brl' } = {}) {
+export function sumBrlCents(records, options = {}) {
+  if (options === null || typeof options !== 'object') throw new TowerScopeError('Invalid monetary options');
+  const { field = 'amount_brl' } = options;
   const count = recordArrayLength(records);
   if (typeof field !== 'string' || !/^[a-zA-Z][a-zA-Z0-9_]*$/u.test(field) ||
       ['constructor', 'prototype', '__proto__'].includes(field)) {
