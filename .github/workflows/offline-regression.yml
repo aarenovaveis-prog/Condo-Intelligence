@@ -36,6 +36,6 @@ jobs:
         with:
           node-version: '22'
       - name: Test offline verifier failure handling
-        run: node --test scripts/verify-offline.test.mjs
+        run: node --test scripts/verify-offline.test.mjs scripts/verify-offline-context.test.mjs
       - name: Run syntax and regression checks
         run: node scripts/verify-offline.mjs
