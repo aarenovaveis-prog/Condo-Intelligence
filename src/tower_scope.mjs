@@ -168,6 +168,10 @@ export function parseBrlCents(value) {
   const negative = value.startsWith('-');
   const [whole, fraction = ''] = (negative ? value.slice(1) : value).split('.');
   const cents = BigInt(whole) * 100n + BigInt(fraction.padEnd(2, '0') || '0');
+  // Negative zero is not canonical: formatting it would silently change its sign.
+  if (negative && cents === 0n) {
+    throw new TowerScopeError('Money must be a canonical decimal string');
+  }
   if (cents > MAX_CENTS) throw new TowerScopeError('Money exceeds supported range');
   return negative ? -cents : cents;
 }
