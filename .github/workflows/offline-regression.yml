@@ -35,5 +35,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Test offline verifier failure handling
+        run: node --test scripts/verify-offline.test.mjs
       - name: Run syntax and regression checks
         run: node scripts/verify-offline.mjs
