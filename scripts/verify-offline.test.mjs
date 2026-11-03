@@ -81,7 +81,7 @@ test('fails closed when regression file contains zero tests', () => {
     assert.equal(result.status, 1, result.stdout + result.stderr);
     // Node 22 may report an empty file as one passing file-level test.
     // The runner must still reject it because no named subtest executed.
-    assert.doesNotMatch(result.stdout, /^# Subtest: (?!test\/tower_scope\.test\.mjs\s*$).+/m);
+    assert.doesNotMatch(result.stdout, /^# Subtest: (?!.*(?:^|[\\/])tower_scope\.test\.mjs\s*$).+/m);
     assert.match(result.stderr, /FAILED: regression/);
     assert.doesNotMatch(result.stdout, /PASS: all offline checks/);
   });
