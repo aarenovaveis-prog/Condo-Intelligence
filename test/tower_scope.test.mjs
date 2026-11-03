@@ -363,3 +363,17 @@ test('tower catalog uses own length descriptor without invoking proxy length get
   assert.deepEqual(filterTowerRecords(records, { towerId: 'A', knownTowers: catalog }).map(row => row.id), ['a1', 'a2']);
   assert.equal(lengthReads, 0);
 });
+
+// v0.9.27: canonical BRL text must not silently normalize negative zero.
+test('reject negative zero monetary text in all supported precisions', () => {
+  for (const value of ['-0', '-0.0', '-0.00']) {
+    assert.throws(() => parseBrlCents(value), TowerScopeError, value);
+    assert.throws(() => sumBrlCents([{ amount_brl: value }]), TowerScopeError, value);
+  }
+});
+
+test('retain positive zero and negative nonzero cents', () => {
+  for (const value of ['0', '0.0', '0.00']) assert.equal(parseBrlCents(value), 0n);
+  assert.equal(parseBrlCents('-0.01'), -1n);
+  assert.equal(formatBrlCents(parseBrlCents('0.00')), '0.00');
+});
