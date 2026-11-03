@@ -32,7 +32,8 @@ function recordDataDescriptors(row) {
       throw new TowerScopeError('record must be a plain data object');
     }
     const descriptors = Object.getOwnPropertyDescriptors(row);
-    if (!Reflect.ownKeys(descriptors).every(key => Object.hasOwn(descriptors[key], 'value'))) {
+    if (!Reflect.ownKeys(descriptors).every(key =>
+      typeof key === 'string' && allowedKeys.includes(key) && Object.hasOwn(descriptors[key], 'value'))) {
       throw new TowerScopeError('record must be a plain data object');
     }
     return descriptors;
@@ -127,7 +128,7 @@ function recordAt(records, index) {
 }
 
 /** Read only own data option descriptors; never invoke caller getters or Proxy get traps. */
-function optionData(options, errorMessage) {
+function optionData(options, errorMessage, allowedKeys) {
   try {
     if (options === null || typeof options !== 'object' || Array.isArray(options)) {
       throw new TowerScopeError(errorMessage);
@@ -148,7 +149,7 @@ function optionData(options, errorMessage) {
 
 /** Return shallow copies of records explicitly scoped to one tower. */
 export function filterTowerRecords(records, options = {}) {
-  const { towerId, knownTowers, includeCommon = false } = optionData(options, 'Invalid filter options');
+  const { towerId, knownTowers, includeCommon = false } = optionData(options, 'Invalid filter options', ['towerId', 'knownTowers', 'includeCommon']);
   if (!canonicalId(towerId)) throw new TowerScopeError('towerId must be canonical');
   const catalog = catalogIds(knownTowers);
   if (!catalog.has(towerId)) throw new TowerScopeError('Unknown towerId');
@@ -199,7 +200,7 @@ export function parseBrlCents(value) {
 
 /** Exact total; never convert money to floating-point Number. */
 export function sumBrlCents(records, options = {}) {
-  const { field = 'amount_brl' } = optionData(options, 'Invalid monetary options');
+  const { field = 'amount_brl' } = optionData(options, 'Invalid monetary options', ['field']);
   const count = recordArrayLength(records);
   if (typeof field !== 'string' || !/^[a-zA-Z][a-zA-Z0-9_]*$/u.test(field) ||
       ['constructor', 'prototype', '__proto__'].includes(field)) {
