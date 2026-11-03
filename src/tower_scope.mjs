@@ -33,7 +33,7 @@ function recordDataDescriptors(row) {
     }
     const descriptors = Object.getOwnPropertyDescriptors(row);
     if (!Reflect.ownKeys(descriptors).every(key =>
-      typeof key === 'string' && allowedKeys.includes(key) && Object.hasOwn(descriptors[key], 'value'))) {
+      typeof key === 'string' && Object.hasOwn(descriptors[key], 'value'))) {
       throw new TowerScopeError('record must be a plain data object');
     }
     return descriptors;
@@ -134,7 +134,8 @@ function optionData(options, errorMessage, allowedKeys) {
       throw new TowerScopeError(errorMessage);
     }
     const descriptors = Object.getOwnPropertyDescriptors(options);
-    if (!Reflect.ownKeys(descriptors).every(key => Object.hasOwn(descriptors[key], 'value'))) {
+    if (!Reflect.ownKeys(descriptors).every(key =>
+      typeof key === 'string' && allowedKeys.includes(key) && Object.hasOwn(descriptors[key], 'value'))) {
       throw new TowerScopeError(errorMessage);
     }
     const copy = Object.create(null);

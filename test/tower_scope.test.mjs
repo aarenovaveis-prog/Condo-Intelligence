@@ -467,3 +467,29 @@ test('supported explicit options preserve scoping and monetary totals', () => {
   const selected = filterTowerRecords(records, { towerId: 'A', knownTowers: ['A', 'B'], includeCommon: true });
   assert.equal(sumBrlCents(selected, { field: 'amount_brl' }), 155n);
 });
+
+
+// v0.9.31: regression for misplaced allowlist check (PR #35).
+test('normal tower and monetary records remain accepted after option validation', () => {
+  const selected = filterTowerRecords(
+    [{ id: 'r1', scope: 'tower', tower_id: 'A', amount_brl: '0.10' }],
+    { towerId: 'A', knownTowers: ['A'] },
+  );
+  assert.equal(selected.length, 1);
+  assert.equal(sumBrlCents(selected), 10n);
+});
+
+test('unknown option names and Symbol keys are rejected in both contracts', () => {
+  assert.throws(() => filterTowerRecords([], {
+    towerId: 'A', knownTowers: ['A'], includeComon: true,
+  }), TowerScopeError);
+  assert.throws(() => sumBrlCents([], { moneyField: 'amount_brl' }), TowerScopeError);
+  assert.throws(() => sumBrlCents([], { [Symbol('field')]: 'amount_brl' }), TowerScopeError);
+});
+
+test('option accessors are rejected without invoking getters', () => {
+  let calls = 0;
+  const opts = { get field() { calls++; return 'amount_brl'; } };
+  assert.throws(() => sumBrlCents([], opts), TowerScopeError);
+  assert.equal(calls, 0);
+});
