@@ -72,3 +72,15 @@ test('fails closed when the regression test file is missing', () => {
     assert.doesNotMatch(result.stdout, /PASS: all offline checks/);
   });
 });
+
+test('fails closed when regression file contains zero tests', () => {
+  withFixture(root => {
+    writeFileSync(join(root, 'test', 'tower_scope.test.mjs'), '// valid syntax but no tests\n');
+    const result = run(root);
+    assert.equal(result.error, undefined);
+    assert.equal(result.status, 1, result.stdout + result.stderr);
+    assert.match(result.stdout, /# tests 0/);
+    assert.match(result.stderr, /FAILED: regression/);
+    assert.doesNotMatch(result.stdout, /PASS: all offline checks/);
+  });
+});
