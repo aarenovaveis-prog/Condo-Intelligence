@@ -398,3 +398,43 @@ test('omitted options retain existing monetary defaults', () => {
   assert.equal(sumBrlCents([{ amount_brl: '0.10' }]), 10n);
   assert.deepEqual(filterTowerRecords(records, { towerId: 'A', knownTowers: ['A'] }).map(row => row.id), ['a1', 'a2']);
 });
+
+ 
+// v0.9.29: options must not execute caller-controlled getters.
+test('filter rejects accessor options without running getters', () => {
+  let reads = 0;
+  const options = { knownTowers: ['A'] };
+  Object.defineProperty(options, 'towerId', { get() { reads++; throw new Error('untrusted getter'); } });
+  assert.throws(() => filterTowerRecords(records, options),
+    { name: 'TowerScopeError', message: 'Invalid filter options' });
+  assert.equal(reads, 0);
+});
+
+test('money sum rejects accessor options without running getters', () => {
+  let reads = 0;
+  const options = {};
+  Object.defineProperty(options, 'field', { get() { reads++; return 'amount_brl'; } });
+  assert.throws(() => sumBrlCents([{ amount_brl: '1.00' }], options),
+    { name: 'TowerScopeError', message: 'Invalid monetary options' });
+  assert.equal(reads, 0);
+});
+
+test('revoked options proxies raise domain errors', () => {
+  const { proxy, revoke } = Proxy.revocable({}, {});
+  revoke();
+  assert.throws(() => filterTowerRecords(records, proxy), TowerScopeError);
+  assert.throws(() => sumBrlCents([{ amount_brl: '1.00' }], proxy), TowerScopeError);
+});
+
+test('option Proxy get traps cannot forge tower or money fields', () => {
+  let reads = 0;
+  const filterOptions = new Proxy({ towerId: 'A', knownTowers: ['A'] }, {
+    get() { reads++; throw new Error('untrusted get'); },
+  });
+  assert.deepEqual(filterTowerRecords(records, filterOptions).map(row => row.id), ['a1', 'a2']);
+  const sumOptions = new Proxy({ field: 'amount_brl' }, {
+    get() { reads++; throw new Error('untrusted get'); },
+  });
+  assert.equal(sumBrlCents([{ amount_brl: '1.00' }], sumOptions), 100n);
+  assert.equal(reads, 0);
+});
