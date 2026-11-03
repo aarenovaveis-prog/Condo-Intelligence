@@ -89,7 +89,7 @@ test('fails closed when regression file contains zero tests', () => {
 test('fails closed when all regression tests are skipped', () => {
   withFixture(root => {
     writeFileSync(join(root, 'test', 'tower_scope.test.mjs'),
-      'import test from "node:test"; test("skipped synthetic", { skip: true }, () => {});\\n');
+      'import test from "node:test"; test("skipped synthetic", { skip: true }, () => {});\n');
     const result = run(root);
     assert.equal(result.error, undefined);
     assert.equal(result.status, 1, result.stdout + result.stderr);
