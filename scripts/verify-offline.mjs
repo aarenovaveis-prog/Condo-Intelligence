@@ -27,7 +27,7 @@ for (const [label, args] of checks) {
     ? [...(result.stdout || '').matchAll(/^# tests (\d+)\s*$/gm)].map(match => Number(match[1])).at(-1)
     : null;
   const passed = label.startsWith('regression:')
-    ? [...(result.stdout || '').matchAll(/^# pass (\\d+)\\s*$/gm)].map(match => Number(match[1])).at(-1)
+    ? [...(result.stdout || '').matchAll(/^# pass (\d+)\s*$/gm)].map(match => Number(match[1])).at(-1)
     : null;
   if (result.error || result.signal || result.status !== 0 || (count !== null && (!(count > 0) || !(passed > 0)))) {
     console.error(`FAILED: ${label}${result.error ? ` (${result.error.message})` : ''}${result.signal ? ` (signal ${result.signal})` : ''}`);
