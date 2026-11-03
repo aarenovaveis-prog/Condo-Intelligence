@@ -76,6 +76,8 @@ function catalogIds(knownTowers) {
         ids.push(slot.value);
       }
     } else if (knownTowers instanceof Set) {
+      const size = Object.getOwnPropertyDescriptor(Set.prototype, 'size').get.call(knownTowers);
+      if (size > MAX_DEMO_TOWERS) throw invalid();
       // Bypass an overridden instance/subclass Symbol.iterator.
       ids = Array.from(Set.prototype.values.call(knownTowers));
     } else {
