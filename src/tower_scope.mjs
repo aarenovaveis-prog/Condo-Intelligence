@@ -68,7 +68,7 @@ function catalogIds(knownTowers) {
       // Inspect every indexed OWN data slot, including positions skipped by
       // Array#some, before constructing the canonical tower set.
       ids = [];
-      for (let i = 0; i < knownTowers.length; i++) {
+      for (let i = 0; i < length.value; i++) {
         const slot = Object.getOwnPropertyDescriptor(knownTowers, String(i));
         if (!slot || !Object.hasOwn(slot, 'value') || !canonicalId(slot.value)) {
           throw invalid();
