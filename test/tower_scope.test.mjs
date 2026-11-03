@@ -321,3 +321,29 @@ test('accept enumerable own monetary field in a null-prototype record', () => {
   const row = Object.assign(Object.create(null), { amount_brl: '0.25' });
   assert.equal(sumBrlCents([row]), 25n);
 });
+
+
+// Bound untrusted catalogs before scanning slots or materializing a Set.
+test('reject oversized array tower catalog before indexed slot inspection', () => {
+  const catalog = new Array(10_001).fill('A');
+  let indexedReads = 0;
+  const proxy = new Proxy(catalog, {
+    getOwnPropertyDescriptor(target, key) {
+      if (key !== 'length') indexedReads++;
+      return Reflect.getOwnPropertyDescriptor(target, key);
+    },
+  });
+  assert.throws(() => filterTowerRecords([], { towerId: 'A', knownTowers: proxy }), TowerScopeError);
+  assert.equal(indexedReads, 0);
+});
+
+test('reject oversized Set tower catalog without invoking its values iterator', () => {
+  const catalog = new Set(Array.from({ length: 10_001 }, (_, i) => `T${i}`));
+  catalog.values = () => { throw new Error('untrusted iterator'); };
+  assert.throws(() => filterTowerRecords([], { towerId: 'T0', knownTowers: catalog }), TowerScopeError);
+});
+
+test('accept bounded catalog of unique canonical tower IDs', () => {
+  const catalog = Array.from({ length: 10_000 }, (_, i) => `T${i}`);
+  assert.deepEqual(filterTowerRecords([], { towerId: 'T9999', knownTowers: catalog }), []);
+});
