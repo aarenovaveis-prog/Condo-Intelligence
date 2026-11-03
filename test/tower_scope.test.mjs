@@ -493,3 +493,34 @@ test('option accessors are rejected without invoking getters', () => {
   assert.throws(() => sumBrlCents([], opts), TowerScopeError);
   assert.equal(calls, 0);
 });
+
+
+// v0.9.32: enforce workload bounds at the exact 10,000-record boundary.
+// Synthetic records only; these checks do not establish tenant authorization.
+test('filter accepts exactly 10,000 declared records', () => {
+  const rows = Array.from({ length: 10_000 }, (_, i) => ({
+    id: String(i), scope: 'tower', tower_id: 'A',
+  }));
+  assert.equal(filterTowerRecords(rows, { towerId: 'A', knownTowers: ['A'] }).length, 10_000);
+});
+
+test('filter rejects 10,001 records before reading row getters', () => {
+  const rows = Array.from({ length: 10_001 }, () => null);
+  let invoked = false;
+  Object.defineProperty(rows, '0', { get() { invoked = true; throw Error('getter'); } });
+  assert.throws(() => filterTowerRecords(rows, { towerId: 'A', knownTowers: ['A'] }), TowerScopeError);
+  assert.equal(invoked, false);
+});
+
+test('money sum accepts 10,000 exact cent values', () => {
+  const rows = Array.from({ length: 10_000 }, () => ({ amount_brl: '0.01' }));
+  assert.equal(sumBrlCents(rows), 10_000n);
+});
+
+test('money sum rejects 10,001 records without evaluating row values', () => {
+  const rows = Array.from({ length: 10_001 }, () => null);
+  let invoked = false;
+  Object.defineProperty(rows, '0', { get() { invoked = true; throw Error('getter'); } });
+  assert.throws(() => sumBrlCents(rows), TowerScopeError);
+  assert.equal(invoked, false);
+});
