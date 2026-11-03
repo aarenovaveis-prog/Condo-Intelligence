@@ -347,3 +347,19 @@ test('accept bounded catalog of unique canonical tower IDs', () => {
   const catalog = Array.from({ length: 10_000 }, (_, i) => `T${i}`);
   assert.deepEqual(filterTowerRecords([], { towerId: 'T9999', knownTowers: catalog }), []);
 });
+
+
+test('tower catalog uses own length descriptor without invoking proxy length getter', () => {
+  let lengthReads = 0;
+  const catalog = new Proxy(['A'], {
+    get(target, key, receiver) {
+      if (key === 'length') {
+        lengthReads++;
+        throw new Error('unexpected length access');
+      }
+      return Reflect.get(target, key, receiver);
+    },
+  });
+  assert.deepEqual(filterTowerRecords(records, { towerId: 'A', knownTowers: catalog }).map(row => row.id), ['a1', 'a2']);
+  assert.equal(lengthReads, 0);
+});
