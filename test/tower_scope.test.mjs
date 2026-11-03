@@ -308,3 +308,16 @@ test('boundary of 10000 synthetic rows remains supported', () => {
   assert.equal(filter('A', false, rows).length, 10_000);
   assert.equal(sumBrlCents(rows), 10_000n);
 });
+
+// Hidden monetary data would disappear when a scoped record is copied.
+// Reject it consistently in the standalone sum contract as well.
+test('reject non-enumerable monetary field rather than silently counting hidden data', () => {
+  const row = {};
+  Object.defineProperty(row, 'amount_brl', { value: '123.45', enumerable: false });
+  assert.throws(() => sumBrlCents([row]), TowerScopeError);
+});
+
+test('accept enumerable own monetary field in a null-prototype record', () => {
+  const row = Object.assign(Object.create(null), { amount_brl: '0.25' });
+  assert.equal(sumBrlCents([row]), 25n);
+});
