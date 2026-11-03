@@ -438,3 +438,32 @@ test('option Proxy get traps cannot forge tower or money fields', () => {
   assert.equal(sumBrlCents([{ amount_brl: '1.00' }], sumOptions), 100n);
   assert.equal(reads, 0);
 });
+
+
+// v0.9.30: silently ignored option typos can select unintended monetary fields.
+test('filter rejects unknown option names instead of silently ignoring typos', () => {
+  assert.throws(() => filterTowerRecords(records, {
+    towerId: 'A', knownTowers: ['A'], includeComon: true,
+  }), { name: 'TowerScopeError', message: 'Invalid filter options' });
+});
+
+test('money sum rejects unknown field-selection options', () => {
+  assert.throws(() => sumBrlCents([{ amount_brl: '1.00', other_brl: '9.00' }], {
+    moneyField: 'other_brl',
+  }), { name: 'TowerScopeError', message: 'Invalid monetary options' });
+});
+
+test('filter and money sum reject symbol option keys', () => {
+  const unexpected = Symbol('unexpected');
+  assert.throws(() => filterTowerRecords([], {
+    towerId: 'A', knownTowers: ['A'], [unexpected]: true,
+  }), TowerScopeError);
+  assert.throws(() => sumBrlCents([{ amount_brl: '1.00' }], {
+    field: 'amount_brl', [unexpected]: true,
+  }), TowerScopeError);
+});
+
+test('supported explicit options preserve scoping and monetary totals', () => {
+  const selected = filterTowerRecords(records, { towerId: 'A', knownTowers: ['A', 'B'], includeCommon: true });
+  assert.equal(sumBrlCents(selected, { field: 'amount_brl' }), 155n);
+});
