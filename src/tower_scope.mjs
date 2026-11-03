@@ -176,7 +176,7 @@ export function sumBrlCents(records, { field = 'amount_brl' } = {}) {
   for (let i = 0; i < count; i++) {
     const row = recordAt(records, i);
     const descriptors = recordDataDescriptors(row);
-    if (!Object.hasOwn(descriptors, field)) {
+    if (!Object.hasOwn(descriptors, field) || !descriptors[field].enumerable) {
       throw new TowerScopeError('Missing or invalid monetary record');
     }
     total += parseBrlCents(descriptors[field].value);
