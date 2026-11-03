@@ -17,10 +17,16 @@ delete childEnv.NODE_TEST_CONTEXT;
 for (const [label, args] of checks) {
   process.stdout.write(`\n== ${label} ==\n`);
   const result = spawnSync(process.execPath, args, {
-    cwd: root, stdio: 'inherit', timeout: timeoutMs,
-    env: childEnv,
+    cwd: root, encoding: 'utf8', timeout: timeoutMs,
+    maxBuffer: 8 * 1024 * 1024, env: childEnv,
   });
-  if (result.error || result.signal || result.status !== 0) {
+  if (result.stdout) process.stdout.write(result.stdout);
+  if (result.stderr) process.stderr.write(result.stderr);
+  // Node can exit successfully after skipping all test files; never accept zero assertions.
+  const count = label.startsWith('regression:')
+    ? [...(result.stdout || '').matchAll(/^# tests (\d+)\s*$/gm)].map(match => Number(match[1])).at(-1)
+    : null;
+  if (result.error || result.signal || result.status !== 0 || (count !== null && !(count > 0))) {
     console.error(`FAILED: ${label}${result.error ? ` (${result.error.message})` : ''}${result.signal ? ` (signal ${result.signal})` : ''}`);
     process.exit(1);
   }
