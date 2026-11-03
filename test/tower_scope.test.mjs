@@ -294,3 +294,17 @@ test('throwing reflection trap raises domain error in both paths', () => {
   assert.throws(() => filter('A', false, [row]), TowerScopeError);
   assert.throws(() => sumBrlCents([row]), TowerScopeError);
 });
+
+// v0.9.10: reject oversized sparse arrays before scanning slots.
+test('filter rejects oversized synthetic array without visiting rows', () => {
+  const rows = new Array(10_001);
+  assert.throws(() => filter('A', false, rows), TowerScopeError);
+});
+test('sum rejects oversized synthetic array before reading money', () => {
+  assert.throws(() => sumBrlCents(new Array(10_001)), TowerScopeError);
+});
+test('boundary of 10000 synthetic rows remains supported', () => {
+  const rows = Array.from({ length: 10_000 }, () => ({ scope: 'tower', tower_id: 'A', amount_brl: '0.01' }));
+  assert.equal(filter('A', false, rows).length, 10_000);
+  assert.equal(sumBrlCents(rows), 10_000n);
+});
