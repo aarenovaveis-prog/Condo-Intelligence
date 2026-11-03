@@ -377,3 +377,24 @@ test('retain positive zero and negative nonzero cents', () => {
   assert.equal(parseBrlCents('-0.01'), -1n);
   assert.equal(formatBrlCents(parseBrlCents('0.00')), '0.00');
 });
+
+
+// v0.9.28: malformed options must fail with a stable domain error.
+test('filter rejects null and primitive options with TowerScopeError', () => {
+  for (const options of [null, 0, false, 'A']) {
+    assert.throws(() => filterTowerRecords(records, options),
+      { name: 'TowerScopeError', message: 'Invalid filter options' });
+  }
+});
+
+test('monetary sum rejects null and primitive options with TowerScopeError', () => {
+  for (const options of [null, 0, false, 'amount_brl']) {
+    assert.throws(() => sumBrlCents(records, options),
+      { name: 'TowerScopeError', message: 'Invalid monetary options' });
+  }
+});
+
+test('omitted options retain existing monetary defaults', () => {
+  assert.equal(sumBrlCents([{ amount_brl: '0.10' }]), 10n);
+  assert.deepEqual(filterTowerRecords(records, { towerId: 'A', knownTowers: ['A'] }).map(row => row.id), ['a1', 'a2']);
+});
