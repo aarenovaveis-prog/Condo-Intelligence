@@ -7,6 +7,7 @@ const MAX_CENTS = 99_999_999_999_999n; // R$ 999,999,999,999.99
 // Longest accepted representation: -999999999999.99 (16 UTF-16 code units).
 const MAX_MONEY_TEXT_LENGTH = 16;
 const MAX_DEMO_RECORDS = 10_000; // bounded offline workload
+const MAX_DEMO_TOWERS = 10_000; // bound catalog scans before reading indexed slots
 const MONEY = /^-?(?:0|[1-9][0-9]*)(?:\.[0-9]{1,2})?$/u;
 
 export class TowerScopeError extends Error {
@@ -59,6 +60,10 @@ function catalogIds(knownTowers) {
   let ids;
   try {
     if (Array.isArray(knownTowers)) {
+      const length = Object.getOwnPropertyDescriptor(knownTowers, 'length');
+      if (!length || !Object.hasOwn(length, 'value') || length.value > MAX_DEMO_TOWERS) {
+        throw invalid();
+      }
       // Never trust a caller-controlled iterator or accessor on an array catalog.
       // Inspect every indexed OWN data slot, including positions skipped by
       // Array#some, before constructing the canonical tower set.
@@ -71,6 +76,8 @@ function catalogIds(knownTowers) {
         ids.push(slot.value);
       }
     } else if (knownTowers instanceof Set) {
+      const size = Object.getOwnPropertyDescriptor(Set.prototype, 'size').get.call(knownTowers);
+      if (size > MAX_DEMO_TOWERS) throw invalid();
       // Bypass an overridden instance/subclass Symbol.iterator.
       ids = Array.from(Set.prototype.values.call(knownTowers));
     } else {
