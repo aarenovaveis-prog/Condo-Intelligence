@@ -98,3 +98,14 @@ test('fails closed when all regression tests are skipped', () => {
     assert.match(result.stderr, /FAILED: regression/);
   });
 });
+
+
+test('accepts a synthetic regression with at least one passing assertion', () => {
+  withFixture(root => {
+    const result = run(root);
+    assert.equal(result.error, undefined);
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.match(result.stdout, /^# pass 1$/m);
+    assert.match(result.stdout, /PASS: all offline checks/);
+  });
+});
