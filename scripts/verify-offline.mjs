@@ -15,7 +15,7 @@ for (const [label, args] of checks) {
   const result = spawnSync(process.execPath, args, {
     cwd: root, stdio: 'inherit', timeout: timeoutMs,
     // Do not propagate injected Node preloads/loaders to child checks.
-    env: { ...process.env, NODE_OPTIONS: '' },
+    env: { ...process.env, NODE_OPTIONS: '', NODE_TEST_CONTEXT: '' },
   });
   if (result.error || result.signal || result.status !== 0) {
     console.error(`FAILED: ${label}${result.error ? ` (${result.error.message})` : ''}${result.signal ? ` (signal ${result.signal})` : ''}`);
