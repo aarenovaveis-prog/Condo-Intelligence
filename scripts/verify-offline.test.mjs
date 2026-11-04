@@ -123,3 +123,33 @@ test('accepts a synthetic regression with at least one passing assertion', () =>
     assert.match(result.stdout, /PASS: all offline checks/);
   });
 });
+
+
+test('fails closed when one of two regression tests is skipped', () => {
+  withFixture(root => {
+    writeFileSync(join(root, 'test', 'tower_scope.test.mjs'),
+      'import test from "node:test"; import assert from "node:assert/strict"; test("passing synthetic", () => assert.equal(1, 1)); test("skipped synthetic", { skip: true }, () => {});\n');
+    const result = run(root);
+    assert.equal(result.error, undefined);
+    assert.equal(result.status, 1, result.stdout + result.stderr);
+    assert.match(result.stdout, /^# tests 2$/m);
+    assert.match(result.stdout, /^# pass 1$/m);
+    assert.match(result.stdout, /^# skipped 1$/m);
+    assert.match(result.stderr, /FAILED: regression/);
+    assert.doesNotMatch(result.stdout, /PASS: all offline checks/);
+  });
+});
+
+test('fails closed when a regression contains a TODO alongside a pass', () => {
+  withFixture(root => {
+    writeFileSync(join(root, 'test', 'tower_scope.test.mjs'),
+      'import test from "node:test"; import assert from "node:assert/strict"; test("passing synthetic", () => assert.equal(1, 1)); test("pending synthetic", { todo: true }, () => {});\n');
+    const result = run(root);
+    assert.equal(result.error, undefined);
+    assert.equal(result.status, 1, result.stdout + result.stderr);
+    assert.match(result.stdout, /^# tests 2$/m);
+    assert.match(result.stdout, /^# todo 1$/m);
+    assert.match(result.stderr, /FAILED: regression/);
+    assert.doesNotMatch(result.stdout, /PASS: all offline checks/);
+  });
+});
