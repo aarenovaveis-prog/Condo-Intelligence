@@ -40,6 +40,11 @@ for (const [label, args] of checks) {
   const todo = label.startsWith('regression:')
     ? [...(result.stdout || '').matchAll(/^# todo (\d+)\s*$/gm)].map(match => Number(match[1])).at(-1)
     : null;
+  // Require a complete, internally consistent TAP summary; a zero exit alone
+  // cannot establish that every reported test passed.
+  const failed = label.startsWith('regression:')
+    ? [...(result.stdout || '').matchAll(/^# fail (\\d+)\\s*$/gm)].map(match => Number(match[1])).at(-1)
+    : null;
   // Node 22 can count an empty test file as one passing file-level subtest.
   // Require at least one named assertion/subtest beyond the fallback file entry.
   const testFile = args.at(-1).split(/[\\/]/).at(-1);
@@ -47,7 +52,7 @@ for (const [label, args] of checks) {
     ? [...(result.stdout || '').matchAll(/^# Subtest: (.+)$/gm)]
       .some(([, name]) => name.trim() !== testFile && !name.trim().endsWith('/' + testFile) && !name.trim().endsWith('\\\\' + testFile))
     : true;
-  if (result.error || result.signal || result.status !== 0 || (count !== null && (!(count > 0) || !(passed > 0) || !hasNamedSubtest || skipped !== 0 || todo !== 0))) {
+  if (result.error || result.signal || result.status !== 0 || (count !== null && (!(count > 0) || passed !== count || failed !== 0 || !hasNamedSubtest || skipped !== 0 || todo !== 0))) {
     console.error(`FAILED: ${label}${result.error ? ` (${result.error.message})` : ''}${result.signal ? ` (signal ${result.signal})` : ''}`);
     process.exit(1);
   }
