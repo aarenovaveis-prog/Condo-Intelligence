@@ -27,7 +27,7 @@ function withFixture(fn) {
       'brl_boundary_cancellation.test.mjs',
     ]) {
       writeFileSync(join(root, 'test', name),
-        'import test from "node:test"; import assert from "node:assert/strict"; test("fixture assertion", () => assert.equal(1, 1));\\n'.replace('\\n', '\n'));
+        'import test from "node:test"; import assert from "node:assert/strict"; test("fixture assertion", () => assert.equal(1, 1));\\n');
     }
     return fn(root);
   } finally {
