@@ -43,7 +43,7 @@ for (const [label, args] of checks) {
   // Require a complete, internally consistent TAP summary; a zero exit alone
   // cannot establish that every reported test passed.
   const failed = label.startsWith('regression:')
-    ? [...(result.stdout || '').matchAll(/^# fail (\\d+)\\s*$/gm)].map(match => Number(match[1])).at(-1)
+    ? [...(result.stdout || '').matchAll(/^# fail (\d+)\s*$/gm)].map(match => Number(match[1])).at(-1)
     : null;
   // Node 22 can count an empty test file as one passing file-level subtest.
   // Require at least one named assertion/subtest beyond the fallback file entry.
