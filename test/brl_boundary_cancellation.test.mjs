@@ -33,3 +33,22 @@ test('cent-scale arithmetic remains exact across positive and negative entries',
   assert.equal(sumBrlCents(rows), 10n);
   assert.equal(parseBrlCents(formatBrlCents(sumBrlCents(rows))), 10n);
 });
+
+test('rejects noncanonical money strings and out-of-range values', () => {
+  for (const value of ['-0', '-0.00', '00.01', '+1.00', '1e3', '1,00', ' 1.00', '1.000', '999999999999.999', '1000000000000.00', '-1000000000000.00', '']) {
+    assert.throws(() => parseBrlCents(value), TowerScopeError, `expected rejection: ${JSON.stringify(value)}`);
+  }
+  for (const value of [0, 1.2, null, undefined, 1n, {}, []]) {
+    assert.throws(() => parseBrlCents(value), TowerScopeError);
+  }
+});
+
+test('formats signed bounds exactly and rejects out-of-range bigint cents', () => {
+  const max = 99_999_999_999_999n;
+  assert.equal(formatBrlCents(max), '999999999999.99');
+  assert.equal(formatBrlCents(-max), '-999999999999.99');
+  assert.equal(parseBrlCents(formatBrlCents(-max)), -max);
+  assert.throws(() => formatBrlCents(max + 1n), TowerScopeError);
+  assert.throws(() => formatBrlCents(-max - 1n), TowerScopeError);
+  assert.throws(() => formatBrlCents(Number(max)), TowerScopeError);
+});
