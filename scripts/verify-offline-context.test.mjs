@@ -8,7 +8,8 @@ import { spawnSync } from 'node:child_process';
 
 const runner = join(dirname(fileURLToPath(import.meta.url)), 'verify-offline.mjs');
 
-test('runner executes failing assertions even when parent NODE_TEST_CONTEXT is set', () => {
+for (const context of ['child-v8', '']) {
+test(`runner executes failing assertions with NODE_TEST_CONTEXT=${JSON.stringify(context)}`, () => {
   const root = mkdtempSync(join(tmpdir(), 'condo-context-'));
   try {
     for (const dir of ['scripts', 'src', 'test']) mkdirSync(join(root, dir));
@@ -29,7 +30,7 @@ test('runner executes failing assertions even when parent NODE_TEST_CONTEXT is s
       writeFileSync(join(root, 'test', name),
         'import test from "node:test"; import assert from "node:assert/strict"; test("fixture assertion", () => assert.equal(1, 1));\n');
     }
-    const env = { ...process.env, NODE_OPTIONS: '', NODE_TEST_CONTEXT: 'child-v8' };
+    const env = { ...process.env, NODE_OPTIONS: '', NODE_TEST_CONTEXT: context };
     const result = spawnSync(process.execPath, [join(root, 'scripts', 'verify-offline.mjs')], {
       cwd: tmpdir(), env, encoding: 'utf8', timeout: 15000,
     });
@@ -42,3 +43,4 @@ test('runner executes failing assertions even when parent NODE_TEST_CONTEXT is s
     rmSync(root, { recursive: true, force: true });
   }
 });
+}
