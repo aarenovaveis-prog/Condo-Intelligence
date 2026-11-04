@@ -165,3 +165,14 @@ test('fails closed when an auxiliary security regression file is missing', () =>
     assert.doesNotMatch(result.stdout, /PASS: all offline checks/);
   });
 });
+
+test('fails closed when the BRL boundary regression file is missing', () => {
+  withFixture(root => {
+    rmSync(join(root, 'test', 'brl_boundary_cancellation.test.mjs'));
+    const result = run(root);
+    assert.equal(result.error, undefined);
+    assert.equal(result.status, 1, result.stdout + result.stderr);
+    assert.match(result.stderr, /FAILED: syntax: BRL boundaries/);
+    assert.doesNotMatch(result.stdout, /PASS: all offline checks/);
+  });
+});
