@@ -35,10 +35,10 @@ for (const [label, args] of checks) {
     : null;
   // A partially skipped or TODO-marked suite must not be reported as fully verified.
   const skipped = label.startsWith('regression:')
-    ? [...(result.stdout || '').matchAll(/^# skipped (\\d+)\\s*$/gm)].map(match => Number(match[1])).at(-1)
+    ? [...(result.stdout || '').matchAll(/^# skipped (\d+)\s*$/gm)].map(match => Number(match[1])).at(-1)
     : null;
   const todo = label.startsWith('regression:')
-    ? [...(result.stdout || '').matchAll(/^# todo (\\d+)\\s*$/gm)].map(match => Number(match[1])).at(-1)
+    ? [...(result.stdout || '').matchAll(/^# todo (\d+)\s*$/gm)].map(match => Number(match[1])).at(-1)
     : null;
   // Node 22 can count an empty test file as one passing file-level subtest.
   // Require at least one named assertion/subtest beyond the fallback file entry.
