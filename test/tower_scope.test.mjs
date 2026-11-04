@@ -558,3 +558,23 @@ for (const [label, action] of [
     assert.throws(() => action(rows), TowerScopeError);
   });
 }
+
+
+// v0.9.34: an array Proxy may violate descriptor invariants without using get().
+// Both contracts must normalize such reflection failures into domain errors.
+for (const [label, action] of [
+  ['filter', rows => filterTowerRecords(rows, { towerId: 'A', knownTowers: ['A'] })],
+  ['money sum', rows => sumBrlCents(rows)],
+]) {
+  test(label + ' rejects an invalid array length descriptor with TowerScopeError', () => {
+    let calls = 0;
+    const rows = new Proxy([{ scope: 'tower', tower_id: 'A', amount_brl: '0.01' }], {
+      getOwnPropertyDescriptor(target, key) {
+        if (key === 'length') { calls++; return undefined; }
+        return Reflect.getOwnPropertyDescriptor(target, key);
+      },
+    });
+    assert.throws(() => action(rows), TowerScopeError);
+    assert.equal(calls, 1);
+  });
+}
