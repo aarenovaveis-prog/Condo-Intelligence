@@ -17,6 +17,18 @@ function withFixture(fn) {
     writeFileSync(join(root, 'src', 'tower_scope.mjs'), 'export const tower = "A";\n');
     writeFileSync(join(root, 'test', 'tower_scope.test.mjs'),
       'import test from "node:test"; import assert from "node:assert/strict"; test("synthetic", () => assert.equal(1, 1));\n');
+    // Keep the synthetic fixture aligned with every regression stage in the runner.
+    // Each file must contain a named assertion, not just valid syntax.
+    for (const name of [
+      'options_proxy_reflection.test.mjs',
+      'options_inherited_getters.test.mjs',
+      'tower_scope_isolation.test.mjs',
+      'tower_metadata_failclosed.test.mjs',
+      'brl_boundary_cancellation.test.mjs',
+    ]) {
+      writeFileSync(join(root, 'test', name),
+        'import test from "node:test"; import assert from "node:assert/strict"; test("fixture assertion", () => assert.equal(1, 1));\\n'.replace('\\n', '\n'));
+    }
     return fn(root);
   } finally {
     rmSync(root, { recursive: true, force: true });
