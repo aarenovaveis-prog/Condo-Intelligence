@@ -16,6 +16,19 @@ test('runner executes failing assertions even when parent NODE_TEST_CONTEXT is s
     writeFileSync(join(root, 'src', 'tower_scope.mjs'), 'export const value = 1;\n');
     writeFileSync(join(root, 'test', 'tower_scope.test.mjs'),
       'import test from "node:test"; import assert from "node:assert/strict"; test("must fail", () => assert.equal(1, 2));\n');
+    // The runner checks syntax for every registered regression file before executing
+    // tower_scope.test.mjs. Provide valid synthetic siblings so this test reaches
+    // the intended NODE_TEST_CONTEXT assertion rather than failing at MODULE_NOT_FOUND.
+    for (const name of [
+      'options_proxy_reflection.test.mjs',
+      'options_inherited_getters.test.mjs',
+      'tower_scope_isolation.test.mjs',
+      'tower_metadata_failclosed.test.mjs',
+      'brl_boundary_cancellation.test.mjs',
+    ]) {
+      writeFileSync(join(root, 'test', name),
+        'import test from "node:test"; import assert from "node:assert/strict"; test("fixture assertion", () => assert.equal(1, 1));\\n'.replace('\\n', '\n'));
+    }
     const env = { ...process.env, NODE_OPTIONS: '', NODE_TEST_CONTEXT: 'child-v8' };
     const result = spawnSync(process.execPath, [join(root, 'scripts', 'verify-offline.mjs')], {
       cwd: tmpdir(), env, encoding: 'utf8', timeout: 15000,
