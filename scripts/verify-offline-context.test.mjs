@@ -27,7 +27,7 @@ test('runner executes failing assertions even when parent NODE_TEST_CONTEXT is s
       'brl_boundary_cancellation.test.mjs',
     ]) {
       writeFileSync(join(root, 'test', name),
-        'import test from "node:test"; import assert from "node:assert/strict"; test("fixture assertion", () => assert.equal(1, 1));\\n'.replace('\\n', '\n'));
+        'import test from "node:test"; import assert from "node:assert/strict"; test("fixture assertion", () => assert.equal(1, 1));\n');
     }
     const env = { ...process.env, NODE_OPTIONS: '', NODE_TEST_CONTEXT: 'child-v8' };
     const result = spawnSync(process.execPath, [join(root, 'scripts', 'verify-offline.mjs')], {
