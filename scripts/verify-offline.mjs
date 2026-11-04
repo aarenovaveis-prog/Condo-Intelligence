@@ -9,10 +9,12 @@ const checks = [
   ['syntax: tests', ['--check', 'test/tower_scope.test.mjs']],
   ['syntax: hostile option proxies', ['--check', 'test/options_proxy_reflection.test.mjs']],
   ['syntax: option getters', ['--check', 'test/options_inherited_getters.test.mjs']],
+  ['syntax: tower isolation', ['--check', 'test/tower_scope_isolation.test.mjs']],
   ['syntax: BRL boundaries', ['--check', 'test/brl_boundary_cancellation.test.mjs']],
   ['regression: tower filters and BRL totals', ['--test', 'test/tower_scope.test.mjs']],
   ['regression: hostile option proxies', ['--test', 'test/options_proxy_reflection.test.mjs']],
   ['regression: inherited and own getters', ['--test', 'test/options_inherited_getters.test.mjs']],
+  ['regression: tower isolation', ['--test', 'test/tower_scope_isolation.test.mjs']],
   ['regression: BRL boundaries', ['--test', 'test/brl_boundary_cancellation.test.mjs']],
 ];
 const timeoutMs = 60_000;
