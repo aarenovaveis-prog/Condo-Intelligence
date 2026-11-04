@@ -33,8 +33,10 @@ for (const [label, args] of checks) {
     : null;
   // Node 22 can count an empty test file as one passing file-level subtest.
   // Require at least one named assertion/subtest beyond the fallback file entry.
+  const testFile = args.at(-1).split(/[\\/]/).at(-1);
   const hasNamedSubtest = label.startsWith('regression:')
-    ? /^# Subtest: (?!.*(?:^|[\\/])tower_scope\.test\.mjs\s*$).+/m.test(result.stdout || '')
+    ? [...(result.stdout || '').matchAll(/^# Subtest: (.+)$/gm)]
+      .some(([, name]) => name.trim() !== testFile && !name.trim().endsWith('/' + testFile) && !name.trim().endsWith('\\\\' + testFile))
     : true;
   if (result.error || result.signal || result.status !== 0 || (count !== null && (!(count > 0) || !(passed > 0) || !hasNamedSubtest))) {
     console.error(`FAILED: ${label}${result.error ? ` (${result.error.message})` : ''}${result.signal ? ` (signal ${result.signal})` : ''}`);
