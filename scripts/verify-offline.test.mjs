@@ -153,3 +153,15 @@ test('fails closed when a regression contains a TODO alongside a pass', () => {
     assert.doesNotMatch(result.stdout, /PASS: all offline checks/);
   });
 });
+
+
+test('fails closed when an auxiliary security regression file is missing', () => {
+  withFixture(root => {
+    rmSync(join(root, 'test', 'tower_metadata_failclosed.test.mjs'));
+    const result = run(root);
+    assert.equal(result.error, undefined);
+    assert.equal(result.status, 1, result.stdout + result.stderr);
+    assert.match(result.stderr, /FAILED: syntax: tower metadata fail-closed/);
+    assert.doesNotMatch(result.stdout, /PASS: all offline checks/);
+  });
+});
