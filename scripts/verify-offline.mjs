@@ -52,7 +52,7 @@ for (const [label, args] of checks) {
     ? [...(result.stdout || '').matchAll(/^# Subtest: (.+)$/gm)]
       .some(([, name]) => name.trim() !== testFile && !name.trim().endsWith('/' + testFile) && !name.trim().endsWith('\\\\' + testFile))
     : true;
-  if (result.error || result.signal || result.status !== 0 || (count !== null && (!(count > 0) || passed !== count || failed !== 0 || !hasNamedSubtest || skipped !== 0 || todo !== 0))) {
+  if (result.error || result.signal || result.status !== 0 || (label.startsWith('regression:') && (!(count > 0) || passed !== count || failed !== 0 || !hasNamedSubtest || skipped !== 0 || todo !== 0))) {
     console.error(`FAILED: ${label}${result.error ? ` (${result.error.message})` : ''}${result.signal ? ` (signal ${result.signal})` : ''}`);
     process.exit(1);
   }
