@@ -139,3 +139,16 @@ test('tower catalog Set ignores an overridden values method', () => {
   );
   assert.equal(invoked, false);
 });
+
+test('tower row __proto__ data key cannot mutate the filtered copy prototype', () => {
+  const row = { scope: 'tower', tower_id: 'TORRE-A', amount_brl: '10.00' };
+  Object.defineProperty(row, '__proto__', {
+    value: { injected: true }, enumerable: true, configurable: true,
+  });
+  const selected = filterTowerRecords([row], { towerId: 'TORRE-A', knownTowers });
+  assert.equal(selected.length, 1);
+  assert.equal(Object.getPrototypeOf(selected[0]), Object.prototype);
+  assert.equal(Object.hasOwn(selected[0], '__proto__'), true);
+  assert.deepEqual(Object.getOwnPropertyDescriptor(selected[0], '__proto__').value, { injected: true });
+  assert.equal(Object.prototype.injected, undefined);
+});
