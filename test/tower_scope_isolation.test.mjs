@@ -113,3 +113,29 @@ test('tower catalog ignores caller-controlled array iterator', () => {
   );
   assert.equal(invoked, false);
 });
+
+test('tower catalog Set ignores an overridden instance iterator', () => {
+  const catalog = new Set(['TORRE-A', 'TORRE-B']);
+  let invoked = false;
+  Object.defineProperty(catalog, Symbol.iterator, {
+    value() { invoked = true; throw new Error('untrusted Set iterator'); },
+  });
+  assert.deepEqual(
+    filterTowerRecords(rows, { towerId: 'TORRE-A', knownTowers: catalog }).map(row => row.amount_brl),
+    ['10.00'],
+  );
+  assert.equal(invoked, false);
+});
+
+test('tower catalog Set ignores an overridden values method', () => {
+  const catalog = new Set(['TORRE-A', 'TORRE-B']);
+  let invoked = false;
+  Object.defineProperty(catalog, 'values', {
+    value() { invoked = true; throw new Error('untrusted Set values'); },
+  });
+  assert.deepEqual(
+    filterTowerRecords(rows, { towerId: 'TORRE-B', knownTowers: catalog }).map(row => row.amount_brl),
+    ['20.00'],
+  );
+  assert.equal(invoked, false);
+});
