@@ -28,3 +28,25 @@ test('filtered rows are copies, not mutable aliases of input', () => {
   selected[0].amount_brl = '999.00';
   assert.equal(rows[0].amount_brl, '10.00');
 });
+
+test('sparse record arrays cannot inherit a record from their prototype', () => {
+  const records = [{ scope: 'tower', tower_id: 'TORRE-A', amount_brl: '10.00' }];
+  records.length = 2; // index 1 is intentionally absent
+  const inherited = Object.create(Array.prototype);
+  Object.defineProperty(inherited, '1', {
+    value: { scope: 'tower', tower_id: 'TORRE-A', amount_brl: '999.00' },
+  });
+  Object.setPrototypeOf(records, inherited);
+  assert.throws(() => filterTowerRecords(records, { towerId: 'TORRE-A', knownTowers }), TowerScopeError);
+});
+
+test('array record accessors are rejected without invoking the getter', () => {
+  const records = [{ scope: 'tower', tower_id: 'TORRE-A', amount_brl: '10.00' }];
+  let invoked = false;
+  Object.defineProperty(records, '0', {
+    configurable: true,
+    get() { invoked = true; throw new Error('untrusted getter executed'); },
+  });
+  assert.throws(() => filterTowerRecords(records, { towerId: 'TORRE-A', knownTowers }), TowerScopeError);
+  assert.equal(invoked, false);
+});
