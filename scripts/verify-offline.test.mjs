@@ -275,3 +275,15 @@ test('fails closed when an auxiliary security suite has only a TODO', () => {
     assert.doesNotMatch(result.stdout, /PASS: all offline checks/);
   });
 });
+
+test('fails closed when an auxiliary security suite partially skips tests', () => {
+  withFixture(root => {
+    writeFileSync(join(root, 'test', 'tower_scope_isolation.test.mjs'),
+      'import test from "node:test"; import assert from "node:assert/strict"; test("passing isolation", () => assert.equal(1, 1)); test("skipped isolation", { skip: true }, () => {});\n');
+    const result = run(root);
+    assert.equal(result.error, undefined);
+    assert.equal(result.status, 1, result.stdout + result.stderr);
+    assert.match(result.stderr, /FAILED: regression: tower isolation/);
+    assert.doesNotMatch(result.stdout, /PASS: all offline checks/);
+  });
+});
