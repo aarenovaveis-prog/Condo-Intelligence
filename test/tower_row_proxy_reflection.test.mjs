@@ -25,3 +25,25 @@ test('revoked row Proxy fails closed without leaking native TypeError', () => {
       error.message === 'record must be a plain data object',
   );
 });
+
+test('filter options reject accessor towerId without invoking getter', () => {
+  let calls = 0;
+  const hostileOptions = {
+    get towerId() { calls++; return 'TORRE-A'; },
+    knownTowers: ['TORRE-A', 'TORRE-B'],
+  };
+  assert.throws(
+    () => filterTowerRecords([row], hostileOptions),
+    error => error instanceof TowerScopeError && error.message === 'Invalid filter options',
+  );
+  assert.equal(calls, 0);
+});
+
+test('filter options reject revoked Proxy without leaking native TypeError', () => {
+  const { proxy, revoke } = Proxy.revocable(options, {});
+  revoke();
+  assert.throws(
+    () => filterTowerRecords([row], proxy),
+    error => error instanceof TowerScopeError && error.message === 'Invalid filter options',
+  );
+});
