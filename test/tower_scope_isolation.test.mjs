@@ -152,3 +152,30 @@ test('tower row __proto__ data key cannot mutate the filtered copy prototype', (
   assert.deepEqual(Object.getOwnPropertyDescriptor(selected[0], '__proto__').value, { injected: true });
   assert.equal(Object.prototype.injected, undefined);
 });
+
+test('tower row metadata getters fail closed without executing user code', () => {
+  for (const key of ['scope', 'tower_id']) {
+    const row = { scope: 'tower', tower_id: 'TORRE-A', amount_brl: '10.00' };
+    let invoked = false;
+    Object.defineProperty(row, key, {
+      enumerable: true, configurable: true,
+      get() { invoked = true; throw new Error('untrusted row metadata getter'); },
+    });
+    assert.throws(
+      () => filterTowerRecords([row], { towerId: 'TORRE-A', knownTowers }),
+      TowerScopeError,
+    );
+    assert.equal(invoked, false, key);
+  }
+});
+
+test('non-enumerable row scope metadata cannot authorize a tower record', () => {
+  for (const key of ['scope', 'tower_id']) {
+    const row = { scope: 'tower', tower_id: 'TORRE-A', amount_brl: '10.00' };
+    Object.defineProperty(row, key, { enumerable: false });
+    assert.deepEqual(
+      filterTowerRecords([row], { towerId: 'TORRE-A', knownTowers }),
+      [],
+    );
+  }
+});
