@@ -225,3 +225,15 @@ test('fails closed when the inherited-getter regression file is missing', () => 
     assert.doesNotMatch(result.stdout, /PASS: all offline checks/);
   });
 });
+
+
+test('fails closed when the tower isolation regression file is missing', () => {
+  withFixture(root => {
+    rmSync(join(root, 'test', 'tower_scope_isolation.test.mjs'));
+    const result = run(root);
+    assert.equal(result.error, undefined);
+    assert.equal(result.status, 1, result.stdout + result.stderr);
+    assert.match(result.stderr, /FAILED: syntax: tower isolation/);
+    assert.doesNotMatch(result.stdout, /PASS: all offline checks/);
+  });
+});
