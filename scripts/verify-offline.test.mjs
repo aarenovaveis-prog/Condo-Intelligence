@@ -213,3 +213,15 @@ test('fails closed when the row proxy reflection regression file is missing', ()
     assert.doesNotMatch(result.stdout, /PASS: all offline checks/);
   });
 });
+
+
+test('fails closed when the inherited-getter regression file is missing', () => {
+  withFixture(root => {
+    rmSync(join(root, 'test', 'options_inherited_getters.test.mjs'));
+    const result = run(root);
+    assert.equal(result.error, undefined);
+    assert.equal(result.status, 1, result.stdout + result.stderr);
+    assert.match(result.stderr, /FAILED: syntax: option getters/);
+    assert.doesNotMatch(result.stdout, /PASS: all offline checks/);
+  });
+});
