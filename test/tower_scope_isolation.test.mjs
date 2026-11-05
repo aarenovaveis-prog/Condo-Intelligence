@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { filterTowerRecords, TowerScopeError } from '../src/tower_scope.mjs';
+import { filterTowerRecords, sumBrlCents, formatBrlCents, TowerScopeError } from '../src/tower_scope.mjs';
 
 const knownTowers = ['TORRE-A', 'TORRE-B'];
 const rows = [
@@ -178,4 +178,21 @@ test('non-enumerable row scope metadata cannot authorize a tower record', () => 
       [],
     );
   }
+});
+
+test('tower-specific BRL totals never include another tower or unassigned common expenses by default', () => {
+  const expenses = [
+    { scope: 'tower', tower_id: 'TORRE-A', amount_brl: '0.10' },
+    { scope: 'tower', tower_id: 'TORRE-A', amount_brl: '0.20' },
+    { scope: 'tower', tower_id: 'TORRE-B', amount_brl: '999.99' },
+    { scope: 'common', tower_id: null, amount_brl: '12.34' },
+    { scope: 'legacy', tower_id: 'TORRE-A', amount_brl: '500.00' },
+  ];
+  const total = (towerId, includeCommon = false) => formatBrlCents(
+    sumBrlCents(filterTowerRecords(expenses, { towerId, knownTowers, includeCommon })),
+  );
+  assert.equal(total('TORRE-A'), '0.30');
+  assert.equal(total('TORRE-B'), '999.99');
+  assert.equal(total('TORRE-A', true), '12.64');
+  assert.equal(total('TORRE-B', true), '1012.33');
 });
