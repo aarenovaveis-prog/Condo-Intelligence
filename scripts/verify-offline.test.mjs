@@ -23,8 +23,10 @@ function withFixture(fn) {
       'options_proxy_reflection.test.mjs',
       'options_inherited_getters.test.mjs',
       'tower_scope_isolation.test.mjs',
+      'tower_row_proxy_reflection.test.mjs',
       'tower_metadata_failclosed.test.mjs',
       'brl_boundary_cancellation.test.mjs',
+      'brl_option_accessors.test.mjs',
     ]) {
       writeFileSync(join(root, 'test', name),
         'import test from "node:test"; import assert from "node:assert/strict"; test("fixture assertion", () => assert.equal(1, 1));\n');
