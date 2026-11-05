@@ -237,3 +237,15 @@ test('fails closed when the tower isolation regression file is missing', () => {
     assert.doesNotMatch(result.stdout, /PASS: all offline checks/);
   });
 });
+
+test('fails closed when a security regression fixture has invalid JavaScript', () => {
+  withFixture(root => {
+    writeFileSync(join(root, 'test', 'tower_scope_isolation.test.mjs'),
+      'function broken( {\\n');
+    const result = run(root);
+    assert.equal(result.error, undefined);
+    assert.equal(result.status, 1, result.stdout + result.stderr);
+    assert.match(result.stderr, /FAILED: syntax: tower isolation/);
+    assert.doesNotMatch(result.stdout, /PASS: all offline checks/);
+  });
+});
