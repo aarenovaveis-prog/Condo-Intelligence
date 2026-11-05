@@ -50,3 +50,27 @@ test('array record accessors are rejected without invoking the getter', () => {
   assert.throws(() => filterTowerRecords(records, { towerId: 'TORRE-A', knownTowers }), TowerScopeError);
   assert.equal(invoked, false);
 });
+
+test('tower filter does not invoke a caller-controlled array iterator', () => {
+  const records = [{ scope: 'tower', tower_id: 'TORRE-A', amount_brl: '10.00' }];
+  let invoked = false;
+  Object.defineProperty(records, Symbol.iterator, {
+    value() { invoked = true; throw new Error('untrusted iterator executed'); },
+  });
+  assert.deepEqual(
+    filterTowerRecords(records, { towerId: 'TORRE-A', knownTowers }).map(row => row.amount_brl),
+    ['10.00'],
+  );
+  assert.equal(invoked, false);
+});
+
+test('tower filter rejects revoked array proxies with a domain error', () => {
+  const { proxy, revoke } = Proxy.revocable(
+    [{ scope: 'tower', tower_id: 'TORRE-A', amount_brl: '10.00' }], {},
+  );
+  revoke();
+  assert.throws(
+    () => filterTowerRecords(proxy, { towerId: 'TORRE-A', knownTowers }),
+    TowerScopeError,
+  );
+});
