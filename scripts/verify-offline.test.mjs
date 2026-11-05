@@ -189,3 +189,15 @@ test('fails closed when the hostile option proxy regression file is missing', ()
     assert.doesNotMatch(result.stdout, /PASS: all offline checks/);
   });
 });
+
+
+test('fails closed when the BRL option-accessor regression file is missing', () => {
+  withFixture(root => {
+    rmSync(join(root, 'test', 'brl_option_accessors.test.mjs'));
+    const result = run(root);
+    assert.equal(result.error, undefined);
+    assert.equal(result.status, 1, result.stdout + result.stderr);
+    assert.match(result.stderr, /FAILED: syntax: BRL option accessors/);
+    assert.doesNotMatch(result.stdout, /PASS: all offline checks/);
+  });
+});
