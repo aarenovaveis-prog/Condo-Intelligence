@@ -74,3 +74,42 @@ test('tower filter rejects revoked array proxies with a domain error', () => {
     TowerScopeError,
   );
 });
+
+test('tower catalog accessor is rejected without executing its getter', () => {
+  const catalog = ['TORRE-A', 'TORRE-B'];
+  let invoked = false;
+  Object.defineProperty(catalog, '1', {
+    configurable: true,
+    get() { invoked = true; throw new Error('untrusted catalog getter'); },
+  });
+  assert.throws(
+    () => filterTowerRecords(rows, { towerId: 'TORRE-A', knownTowers: catalog }),
+    TowerScopeError,
+  );
+  assert.equal(invoked, false);
+});
+
+test('sparse tower catalog cannot inherit an authorized ID', () => {
+  const catalog = ['TORRE-A'];
+  catalog.length = 2;
+  const inherited = Object.create(Array.prototype);
+  Object.defineProperty(inherited, '1', { value: 'TORRE-B' });
+  Object.setPrototypeOf(catalog, inherited);
+  assert.throws(
+    () => filterTowerRecords(rows, { towerId: 'TORRE-A', knownTowers: catalog }),
+    TowerScopeError,
+  );
+});
+
+test('tower catalog ignores caller-controlled array iterator', () => {
+  const catalog = ['TORRE-A', 'TORRE-B'];
+  let invoked = false;
+  Object.defineProperty(catalog, Symbol.iterator, {
+    value() { invoked = true; throw new Error('untrusted catalog iterator'); },
+  });
+  assert.deepEqual(
+    filterTowerRecords(rows, { towerId: 'TORRE-A', knownTowers: catalog }).map(row => row.amount_brl),
+    ['10.00'],
+  );
+  assert.equal(invoked, false);
+});
