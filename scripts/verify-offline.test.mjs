@@ -201,3 +201,15 @@ test('fails closed when the BRL option-accessor regression file is missing', () 
     assert.doesNotMatch(result.stdout, /PASS: all offline checks/);
   });
 });
+
+
+test('fails closed when the row proxy reflection regression file is missing', () => {
+  withFixture(root => {
+    rmSync(join(root, 'test', 'tower_row_proxy_reflection.test.mjs'));
+    const result = run(root);
+    assert.equal(result.error, undefined);
+    assert.equal(result.status, 1, result.stdout + result.stderr);
+    assert.match(result.stderr, /FAILED: syntax: row proxy reflection/);
+    assert.doesNotMatch(result.stdout, /PASS: all offline checks/);
+  });
+});
