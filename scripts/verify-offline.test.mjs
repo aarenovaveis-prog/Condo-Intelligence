@@ -341,3 +341,16 @@ test('fails closed when inherited tower catalog regression contains no assertion
     assert.doesNotMatch(result.stdout, /PASS: all offline checks/);
   });
 });
+
+
+test('fails closed when inherited tower catalog regression partially skips tests', () => {
+  withFixture(root => {
+    writeFileSync(join(root, 'test', 'tower_catalog_inherited_index.test.mjs'),
+      'import test from "node:test"; import assert from "node:assert/strict"; test("passing inherited catalog", () => assert.equal(1, 1)); test("skipped inherited catalog", { skip: true }, () => {});\n');
+    const result = run(root);
+    assert.equal(result.error, undefined);
+    assert.equal(result.status, 1, result.stdout + result.stderr);
+    assert.match(result.stderr, /FAILED: regression: inherited tower catalog/);
+    assert.doesNotMatch(result.stdout, /PASS: all offline checks/);
+  });
+});
