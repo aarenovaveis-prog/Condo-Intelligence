@@ -99,3 +99,18 @@ test('legacy rows without explicit scope cannot enter tower totals', () => {
   });
   assert.equal(formatBrlCents(sumBrlCents(selected)), '0.10');
 });
+
+test('negative common refund is opt-in and cannot leak between towers', () => {
+  const rows = [
+    { scope: 'tower', tower_id: 'TORRE-A', amount_brl: '1.00' },
+    { scope: 'tower', tower_id: 'TORRE-B', amount_brl: '500.00' },
+    { scope: 'common', tower_id: null, amount_brl: '-0.25' },
+  ];
+  assert.equal(total(rows, 'TORRE-A'), '1.00');
+  assert.equal(total(rows, 'TORRE-B'), '500.00');
+  for (const towerId of knownTowers) {
+    const selected = filterTowerRecords(rows, { towerId, knownTowers, includeCommon: true });
+    assert.equal(formatBrlCents(sumBrlCents(selected)),
+      towerId === 'TORRE-A' ? '0.75' : '499.75');
+  }
+});
