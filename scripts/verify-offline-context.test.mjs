@@ -32,6 +32,7 @@ test(`runner executes failing assertions with NODE_TEST_CONTEXT=${JSON.stringify
       'tower_hidden_scope_exclusion.test.mjs',
       'common_hidden_money_failclosed.test.mjs',
       'tower_null_prototype_scope.test.mjs',
+      'tower_snapshot_independence.test.mjs',
     ]) {
       writeFileSync(join(root, 'test', name),
         'import test from "node:test"; import assert from "node:assert/strict"; test("fixture assertion", () => assert.equal(1, 1));\n');
