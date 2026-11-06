@@ -292,3 +292,14 @@ test('fails closed when an auxiliary security suite partially skips tests', () =
     assert.doesNotMatch(result.stdout, /PASS: all offline checks/);
   });
 });
+
+test('fails closed when the tower snapshot regression file is missing', () => {
+  withFixture(root => {
+    rmSync(join(root, 'test', 'tower_snapshot_independence.test.mjs'));
+    const result = run(root);
+    assert.equal(result.error, undefined);
+    assert.equal(result.status, 1, result.stdout + result.stderr);
+    assert.match(result.stderr, /FAILED: syntax: tower snapshot independence/);
+    assert.doesNotMatch(result.stdout, /PASS: all offline checks/);
+  });
+});
