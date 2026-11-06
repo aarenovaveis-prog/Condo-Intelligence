@@ -28,6 +28,7 @@ function withFixture(fn) {
       'brl_boundary_cancellation.test.mjs',
       'brl_option_accessors.test.mjs',
       'tower_brl_refunds_invalid.test.mjs',
+      'common_hidden_money_failclosed.test.mjs',
     ]) {
       writeFileSync(join(root, 'test', name),
         'import test from "node:test"; import assert from "node:assert/strict"; test("fixture assertion", () => assert.equal(1, 1));\n');
