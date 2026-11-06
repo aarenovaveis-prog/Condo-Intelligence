@@ -34,3 +34,20 @@ test('invalid amount in another tower cannot contaminate selected total', () => 
   assert.equal(total(rows, 'TORRE-A'), '1.00');
   assert.throws(() => total(rows, 'TORRE-B'), TowerScopeError);
 });
+
+test('non-enumerable money field is rejected rather than silently counted', () => {
+  const hidden = { scope: 'tower', tower_id: 'TORRE-A' };
+  Object.defineProperty(hidden, 'amount_brl', { value: '999.99', enumerable: false });
+  const rows = [
+    { scope: 'tower', tower_id: 'TORRE-A', amount_brl: '1.00' },
+    hidden,
+  ];
+  assert.throws(() => total(rows, 'TORRE-A'), TowerScopeError);
+});
+
+test('inherited money field cannot satisfy the selected tower total', () => {
+  const inherited = Object.create({ amount_brl: '999.99' });
+  inherited.scope = 'tower';
+  inherited.tower_id = 'TORRE-A';
+  assert.throws(() => total([inherited], 'TORRE-A'), TowerScopeError);
+});
