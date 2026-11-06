@@ -14,6 +14,7 @@ const checks = [
   ['syntax: tower metadata fail-closed', ['--check', 'test/tower_metadata_failclosed.test.mjs']],
   ['syntax: BRL boundaries', ['--check', 'test/brl_boundary_cancellation.test.mjs']],
   ['syntax: tower BRL refunds and invalid amounts', ['--check', 'test/tower_brl_refunds_invalid.test.mjs']],
+  ['syntax: hidden common money fail-closed', ['--check', 'test/common_hidden_money_failclosed.test.mjs']],
   ['syntax: BRL option accessors', ['--check', 'test/brl_option_accessors.test.mjs']],
   ['regression: tower filters and BRL totals', ['--test', 'test/tower_scope.test.mjs']],
   ['regression: hostile option proxies', ['--test', 'test/options_proxy_reflection.test.mjs']],
@@ -23,6 +24,7 @@ const checks = [
   ['regression: tower metadata fail-closed', ['--test', 'test/tower_metadata_failclosed.test.mjs']],
   ['regression: BRL boundaries', ['--test', 'test/brl_boundary_cancellation.test.mjs']],
   ['regression: tower BRL refunds and invalid amounts', ['--test', 'test/tower_brl_refunds_invalid.test.mjs']],
+  ['regression: hidden common money fail-closed', ['--test', 'test/common_hidden_money_failclosed.test.mjs']],
   ['regression: BRL option accessors', ['--test', 'test/brl_option_accessors.test.mjs']],
 ];
 const timeoutMs = 60_000;
