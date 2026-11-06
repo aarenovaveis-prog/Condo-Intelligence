@@ -51,3 +51,27 @@ test('inherited money field cannot satisfy the selected tower total', () => {
   inherited.tower_id = 'TORRE-A';
   assert.throws(() => total([inherited], 'TORRE-A'), TowerScopeError);
 });
+
+test('common expense is included only when explicitly requested', () => {
+  const rows = [
+    { scope: 'tower', tower_id: 'TORRE-A', amount_brl: '0.10' },
+    { scope: 'common', tower_id: null, amount_brl: '0.20' },
+    { scope: 'tower', tower_id: 'TORRE-B', amount_brl: '999.99' },
+  ];
+  assert.equal(total(rows, 'TORRE-A'), '0.10');
+  const selected = filterTowerRecords(rows, {
+    towerId: 'TORRE-A', knownTowers, includeCommon: true,
+  });
+  assert.equal(formatBrlCents(sumBrlCents(selected)), '0.30');
+});
+
+test('invalid common amount fails closed only when common expenses are requested', () => {
+  const rows = [
+    { scope: 'tower', tower_id: 'TORRE-A', amount_brl: '1.00' },
+    { scope: 'common', tower_id: null, amount_brl: '1,00' },
+  ];
+  assert.equal(total(rows, 'TORRE-A'), '1.00');
+  assert.throws(() => sumBrlCents(filterTowerRecords(rows, {
+    towerId: 'TORRE-A', knownTowers, includeCommon: true,
+  })), TowerScopeError);
+});
