@@ -16,6 +16,7 @@ const checks = [
   ['syntax: tower BRL refunds and invalid amounts', ['--check', 'test/tower_brl_refunds_invalid.test.mjs']],
   ['syntax: hidden tower scope exclusion', ['--check', 'test/tower_hidden_scope_exclusion.test.mjs']],
   ['syntax: null-prototype tower scope', ['--check', 'test/tower_null_prototype_scope.test.mjs']],
+  ['syntax: tower snapshot independence', ['--check', 'test/tower_snapshot_independence.test.mjs']],
   ['syntax: hidden common money fail-closed', ['--check', 'test/common_hidden_money_failclosed.test.mjs']],
   ['syntax: BRL option accessors', ['--check', 'test/brl_option_accessors.test.mjs']],
   ['regression: tower filters and BRL totals', ['--test', 'test/tower_scope.test.mjs']],
@@ -28,6 +29,7 @@ const checks = [
   ['regression: tower BRL refunds and invalid amounts', ['--test', 'test/tower_brl_refunds_invalid.test.mjs']],
   ['regression: hidden tower scope exclusion', ['--test', 'test/tower_hidden_scope_exclusion.test.mjs']],
   ['regression: null-prototype tower scope', ['--test', 'test/tower_null_prototype_scope.test.mjs']],
+  ['regression: tower snapshot independence', ['--test', 'test/tower_snapshot_independence.test.mjs']],
   ['regression: hidden common money fail-closed', ['--test', 'test/common_hidden_money_failclosed.test.mjs']],
   ['regression: BRL option accessors', ['--test', 'test/brl_option_accessors.test.mjs']],
 ];
