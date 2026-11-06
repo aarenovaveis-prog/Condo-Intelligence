@@ -19,9 +19,20 @@ for (const knownTowers of [
   });
 }
 
-test('accepts unique canonical tower IDs and isolates selected tower', () => {
+test('accepts unique canonical tower IDs and excludes other-tower and common records by default', () => {
+  const mixedRecords = [
+    { scope: 'tower', tower_id: 'A', amount_brl: '1.00' },
+    { scope: 'tower', tower_id: 'B', amount_brl: '999.00' },
+    { scope: 'common', tower_id: null, amount_brl: '10.00' },
+  ];
+  const snapshot = structuredClone(mixedRecords);
   assert.deepEqual(
-    filterTowerRecords(records, { towerId: 'A', knownTowers: ['A', 'B'] }),
-    records,
+    filterTowerRecords(mixedRecords, { towerId: 'A', knownTowers: ['A', 'B'] }),
+    [mixedRecords[0]],
   );
+  assert.deepEqual(
+    filterTowerRecords(mixedRecords, { towerId: 'B', knownTowers: ['A', 'B'] }),
+    [mixedRecords[1]],
+  );
+  assert.deepEqual(mixedRecords, snapshot, 'filter must not mutate source records');
 });
