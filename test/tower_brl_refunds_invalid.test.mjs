@@ -114,3 +114,27 @@ test('negative common refund is opt-in and cannot leak between towers', () => {
       towerId === 'TORRE-A' ? '0.75' : '499.75');
   }
 });
+
+test('negative zero in opted-in common expense fails closed', () => {
+  const rows = [
+    { scope: 'tower', tower_id: 'TORRE-A', amount_brl: '1.00' },
+    { scope: 'common', tower_id: null, amount_brl: '-0.00' },
+  ];
+  assert.equal(total(rows, 'TORRE-A'), '1.00');
+  assert.throws(() => sumBrlCents(filterTowerRecords(rows, {
+    towerId: 'TORRE-A', knownTowers, includeCommon: true,
+  })), TowerScopeError);
+});
+
+test('opting into a common refund can produce an exact negative total', () => {
+  const rows = [
+    { scope: 'tower', tower_id: 'TORRE-A', amount_brl: '0.10' },
+    { scope: 'tower', tower_id: 'TORRE-B', amount_brl: '9.99' },
+    { scope: 'common', tower_id: null, amount_brl: '-0.25' },
+  ];
+  assert.equal(total(rows, 'TORRE-A'), '0.10');
+  const selected = filterTowerRecords(rows, {
+    towerId: 'TORRE-A', knownTowers, includeCommon: true,
+  });
+  assert.equal(formatBrlCents(sumBrlCents(selected)), '-0.15');
+});
