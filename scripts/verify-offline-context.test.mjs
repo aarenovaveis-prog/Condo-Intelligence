@@ -29,6 +29,7 @@ test(`runner executes failing assertions with NODE_TEST_CONTEXT=${JSON.stringify
       'brl_boundary_cancellation.test.mjs',
       'brl_option_accessors.test.mjs',
       'tower_brl_refunds_invalid.test.mjs',
+      'tower_catalog_sparse_accessor.test.mjs',
       'tower_hidden_scope_exclusion.test.mjs',
       'common_hidden_money_failclosed.test.mjs',
       'tower_null_prototype_scope.test.mjs',
