@@ -75,3 +75,27 @@ test('invalid common amount fails closed only when common expenses are requested
     towerId: 'TORRE-A', knownTowers, includeCommon: true,
   })), TowerScopeError);
 });
+
+
+test('common records with another tower id cannot enter selected total', () => {
+  const rows = [
+    { scope: 'tower', tower_id: 'TORRE-A', amount_brl: '1.00' },
+    { scope: 'common', tower_id: 'TORRE-B', amount_brl: '999.99' },
+    { scope: 'common', tower_id: null, amount_brl: '0.25' },
+  ];
+  const selected = filterTowerRecords(rows, {
+    towerId: 'TORRE-A', knownTowers, includeCommon: true,
+  });
+  assert.equal(formatBrlCents(sumBrlCents(selected)), '1.25');
+});
+
+test('legacy rows without explicit scope cannot enter tower totals', () => {
+  const rows = [
+    { tower_id: 'TORRE-A', amount_brl: '999.99' },
+    { scope: 'tower', tower_id: 'TORRE-A', amount_brl: '0.10' },
+  ];
+  const selected = filterTowerRecords(rows, {
+    towerId: 'TORRE-A', knownTowers, includeCommon: true,
+  });
+  assert.equal(formatBrlCents(sumBrlCents(selected)), '0.10');
+});
