@@ -329,3 +329,15 @@ test('fails closed when inherited tower catalog regression file is missing', () 
     assert.doesNotMatch(result.stdout, /PASS: all offline checks/);
   });
 });
+
+test('fails closed when inherited tower catalog regression contains no assertions', () => {
+  withFixture(root => {
+    writeFileSync(join(root, 'test', 'tower_catalog_inherited_index.test.mjs'),
+      '// syntactically valid but no registered tests\n');
+    const result = run(root);
+    assert.equal(result.error, undefined);
+    assert.equal(result.status, 1, result.stdout + result.stderr);
+    assert.match(result.stderr, /FAILED: regression: inherited tower catalog/);
+    assert.doesNotMatch(result.stdout, /PASS: all offline checks/);
+  });
+});
