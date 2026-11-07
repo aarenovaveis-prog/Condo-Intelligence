@@ -32,6 +32,7 @@ test(`runner executes failing assertions with NODE_TEST_CONTEXT=${JSON.stringify
       'tower_catalog_inherited_index.test.mjs',
       'tower_catalog_sparse_accessor.test.mjs',
       'tower_catalog_duplicate_ids.test.mjs',
+      'tower_common_frozen_input.test.mjs',
       'tower_hidden_scope_exclusion.test.mjs',
       'common_hidden_money_failclosed.test.mjs',
       'tower_null_prototype_scope.test.mjs',
