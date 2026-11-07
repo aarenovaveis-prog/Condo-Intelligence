@@ -22,3 +22,21 @@ test('common-area opt-in accepts frozen input without mutating it', () => {
   assert.equal(common.tower_id, null);
   assert.deepEqual(filterTowerRecords(records, options), [tower, common]);
 });
+
+test('frozen common-area records remain excluded unless explicitly opted in', () => {
+  const towerA = Object.freeze({ scope: 'tower', tower_id: 'A', amount_brl: '10.00' });
+  const common = Object.freeze({ scope: 'common', tower_id: null, amount_brl: '2.50' });
+  const towerB = Object.freeze({ scope: 'tower', tower_id: 'B', amount_brl: '99.00' });
+  const records = Object.freeze([towerA, common, towerB]);
+  const knownTowers = Object.freeze(['A', 'B']);
+  const options = Object.freeze({ towerId: 'A', knownTowers });
+
+  const selected = filterTowerRecords(records, options);
+  assert.deepEqual(selected, [towerA]);
+  assert.notStrictEqual(selected[0], towerA);
+  selected[0].amount_brl = '0.00';
+
+  assert.equal(towerA.amount_brl, '10.00');
+  assert.deepEqual(filterTowerRecords(records, options), [towerA]);
+  assert.deepEqual(records, [towerA, common, towerB]);
+});
