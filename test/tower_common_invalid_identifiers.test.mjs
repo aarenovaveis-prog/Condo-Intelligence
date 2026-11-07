@@ -40,3 +40,19 @@ test('malformed common IDs remain excluded when includeCommon is omitted', () =>
   assert.notStrictEqual(result[0], rows[0]);
   assert.equal(rows[0].amount_brl, '2.00');
 });
+
+
+test('common records with noncanonical Unicode tower IDs remain excluded', () => {
+  const rows = Object.freeze([
+    Object.freeze({ scope: 'tower', tower_id: 'A', amount_brl: '2.10' }),
+    Object.freeze({ scope: 'common', tower_id: null, amount_brl: '3.20' }),
+    ...['\u00a0', '\u2003', '\u200b', ' A', 'A ', 'A\n', 'a'].map(tower_id =>
+      Object.freeze({ scope: 'common', tower_id, amount_brl: '999.99' })),
+  ]);
+  const withoutCommon = filterTowerRecords(rows, { towerId: 'A', knownTowers });
+  const withCommon = filterTowerRecords(rows, { towerId: 'A', knownTowers, includeCommon: true });
+  assert.deepEqual(withoutCommon, [rows[0]]);
+  assert.deepEqual(withCommon, [rows[0], rows[1]]);
+  assert.notStrictEqual(withCommon[1], rows[1]);
+  assert.equal(rows[1].amount_brl, '3.20');
+});
