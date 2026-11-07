@@ -56,3 +56,19 @@ test('common records with noncanonical Unicode tower IDs remain excluded', () =>
   assert.notStrictEqual(withCommon[1], rows[1]);
   assert.equal(rows[1].amount_brl, '3.20');
 });
+
+test('noncanonical selected tower IDs fail closed even when common records are opted in', () => {
+  const records = Object.freeze([
+    Object.freeze({ scope: 'tower', tower_id: 'A', amount_brl: '1.00' }),
+    Object.freeze({ scope: 'common', tower_id: null, amount_brl: '2.00' }),
+  ]);
+  for (const towerId of [' A', 'A ', 'A\n', '\u00a0', '\u200b', '', 0, null]) {
+    assert.throws(
+      () => filterTowerRecords(records, { towerId, knownTowers, includeCommon: true }),
+      { name: 'TowerScopeError' },
+    );
+  }
+  assert.deepEqual(filterTowerRecords(records, {
+    towerId: 'A', knownTowers, includeCommon: true,
+  }), records);
+});
