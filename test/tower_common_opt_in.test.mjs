@@ -28,3 +28,14 @@ test('opt-in includes only valid common rows and never leaks another tower', () 
 test('common-area opt-in must be boolean, not a truthy string', () => {
   assert.throws(() => filterTowerRecords(rows, { towerId: 'A', knownTowers: ['A', 'B'], includeCommon: 'true' }), /includeCommon must be boolean/);
 });
+
+test('mutating returned common-area copies does not alter input or later selections', () => {
+  const first = filterTowerRecords(rows, { towerId: 'A', knownTowers: ['A', 'B'], includeCommon: true });
+  first[0].amount_brl = '999.00';
+  first[1].amount_brl = '999.00';
+  first[2].tower_id = 'B';
+  const second = filterTowerRecords(rows, { towerId: 'A', knownTowers: ['A', 'B'], includeCommon: true });
+  assert.deepEqual(second, [rows[0], rows[2], rows[3]]);
+  assert.equal(rows[2].amount_brl, '3.00');
+  assert.equal(rows[3].tower_id, '');
+});
