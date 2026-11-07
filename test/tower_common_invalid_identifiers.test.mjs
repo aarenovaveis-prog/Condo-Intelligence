@@ -42,7 +42,7 @@ test('malformed common IDs remain excluded when includeCommon is omitted', () =>
 });
 
 
-test('common records with noncanonical Unicode tower IDs never enter BRL totals', () => {
+test('common records with noncanonical Unicode tower IDs remain excluded', () => {
   const rows = Object.freeze([
     Object.freeze({ scope: 'tower', tower_id: 'A', amount_brl: '2.10' }),
     Object.freeze({ scope: 'common', tower_id: null, amount_brl: '3.20' }),
