@@ -24,3 +24,19 @@ test('valid empty-string common scope is opt-in only', () => {
   assert.deepEqual(filterTowerRecords(records, { towerId: 'A', knownTowers }), []);
   assert.deepEqual(filterTowerRecords(records, { towerId: 'A', knownTowers, includeCommon: true }), [common]);
 });
+
+test('malformed common IDs remain excluded when includeCommon is omitted', () => {
+  const malformedIds = [undefined, ' ', 0, false, 'B', 'C'];
+  const rows = Object.freeze([
+    Object.freeze({ scope: 'tower', tower_id: 'A', amount_brl: '2.00' }),
+    Object.freeze({ scope: 'common', tower_id: null, amount_brl: '3.00' }),
+    ...malformedIds.map(tower_id =>
+      Object.freeze({ scope: 'common', tower_id, amount_brl: '999.00' })),
+  ]);
+  const result = filterTowerRecords(rows, {
+    towerId: 'A', knownTowers,
+  });
+  assert.deepEqual(result, [rows[0]]);
+  assert.notStrictEqual(result[0], rows[0]);
+  assert.equal(rows[0].amount_brl, '2.00');
+});
