@@ -31,6 +31,7 @@ function withFixture(fn) {
       'tower_catalog_inherited_index.test.mjs',
       'tower_catalog_sparse_accessor.test.mjs',
       'tower_catalog_duplicate_ids.test.mjs',
+      'tower_confusable_selected_ids.test.mjs',
       'tower_common_invalid_identifiers.test.mjs',
       'tower_common_mismatched_frozen.test.mjs',
       'tower_common_frozen_input.test.mjs',
